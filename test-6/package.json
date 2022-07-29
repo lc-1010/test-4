@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "descrition": "test connecting substrate",
   "author": "lc-1010",
-  "license": "Unliccens",
+  "license": "mit",
   "private": false,
   "scripts": {
     "start": "node --use_strict index.js",
@@ -11,7 +11,7 @@
     "start:degbu": "nodemon --use_strict --inspect "
   },
   "dependencies": {
-    "@polkadot/api": "^8.11.1",
+    "@polkadot/api": "^8.14.1",
     "@polkadot/types": "^8.14.1",
     "web3": "^1.7.4"
   },

@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import { Int, u32 } from "@polkadot/types";
-import { Events } from "@polkadot/types/metadata/decorate/types";
+import { ApiTypes } from "@polkadot/api/types";
+import { Map } from "@polkadot/types";
+import { CodeHash } from "@polkadot/types/interfaces";
 
 async function getConnectChain() {
     const provider = new WsProvider('ws://127.0.0.1:9944')
@@ -17,21 +18,31 @@ async function getConnectChain() {
 
 async function traversEvents() {
     const api = await ApiPromise.create();
-    api.query.system.events((events: any) => {
-
-        console.log(`\nReceived   ${events} events: \n`);
+    api.query.system.events((events: Array<ApiTypes>) => {
+        // console.log('---------------', event.length);
+        console.log(`\nReceived ${events.length} events:`);
+        // console.log(typeof events[0]);
         events.forEach((record: any) => {
+
+            //  console.log(record.toHuman());
             const { event, phase } = record;
-            const types = event.typeDef;
-            console.log(`\t${event.section}: ${event.method}:: (phase = ${phase.toString()})`);
-            console.log(`\t\t${event} `);
-            event.data.forEach((data: any, index: any) => {
-                console.log(`\n\r{types[index].type}:${data.toString()} `);
-            });
+            if (event.method == 'SomethingStored') {
+                const types = event.typeDef;
+                // Show what we are busy with   
+                console.log(`\t${event.section}:${event.method}:: (phase=${phase})`);
+                console.log('---------------');
+                console.log(`\t\t${event.meta}`);
+                console.log('---------------');
+                event.data.forEach((data: any, index: any) => {
+                    console.log(`${types[index].type} : ${data}`);
+                });
+            }
 
         });
-
+        //console.log(event.toHuman(), event.toRawType(),);
     });
+
+
 
 }
 
