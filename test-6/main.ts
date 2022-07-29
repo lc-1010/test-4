@@ -1,7 +1,6 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import { ApiTypes } from "@polkadot/api/types";
-import { Map } from "@polkadot/types";
-import { CodeHash } from "@polkadot/types/interfaces";
+import { Vec } from "@polkadot/types";
+import type { EventRecord } from '@polkadot/types/interfaces';
 
 async function getConnectChain() {
     const provider = new WsProvider('ws://127.0.0.1:9944')
@@ -18,30 +17,27 @@ async function getConnectChain() {
 
 async function traversEvents() {
     const api = await ApiPromise.create();
-    api.query.system.events((events: Array<ApiTypes>) => {
-        // console.log('---------------', event.length);
+
+    // Subscribe to system events via storage
+    api.query.system.events((events: Vec<EventRecord>) => {
         console.log(`\nReceived ${events.length} events:`);
-        // console.log(typeof events[0]);
-        events.forEach((record: any) => {
 
-            //  console.log(record.toHuman());
+        // Loop through the Vec<EventRecord>
+        events.forEach((record: EventRecord) => {
+            // Extract the phase, event and the event types
             const { event, phase } = record;
-            if (event.method == 'SomethingStored') {
-                const types = event.typeDef;
-                // Show what we are busy with   
-                console.log(`\t${event.section}:${event.method}:: (phase=${phase})`);
-                console.log('---------------');
-                console.log(`\t\t${event.meta}`);
-                console.log('---------------');
-                event.data.forEach((data: any, index: any) => {
-                    console.log(`${types[index].type} : ${data}`);
-                });
-            }
+            const types = event.typeDef;
 
+            // Show what we are busy with
+            console.log(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`);
+            console.log(`\t\t${event.meta.docs.toString()}`);
+
+            // Loop through each of the parameters, displaying the type and data
+            event.data.forEach((data, index) => {
+                console.log(`\t\t\t${types[index].type}: ${data.toString()}`);
+            });
         });
-        //console.log(event.toHuman(), event.toRawType(),);
     });
-
 
 
 }
