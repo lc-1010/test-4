@@ -20,6 +20,7 @@ pub mod pallet{
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
+    #[pallet::StorageMap]
     pub type Proofs<T: Config> = StorageMap<
     _,
     Blake2_128Concat,
