@@ -40,7 +40,7 @@ pub mod pallet{
         ClaimNotExist,
         NotClaimOwner,
     }
-
+    
     #[pallet::hooks]
     impl<T:Config> Hooks<BlockNumberFor<T>> for Pallet<T>{}
     
