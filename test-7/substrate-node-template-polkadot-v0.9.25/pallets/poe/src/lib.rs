@@ -53,22 +53,30 @@ pub mod pallet {
         */
 		pub fn create_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			ensure!(!Proofs::<T>::contains_key(&claim),Error::<T>ProofAlreadyExist);
-			let currrent_block = <frame_support::Pallet<T>>::block_number();
-			Proofs::<T>::insert(&claim, (&sender, currrent_block));
+
+			let bounded_claim = BoundedVec::<u8,T::MaxClinetLenght>::try_from(claim.clone())
+				.map_err(|_|Error::<T>::ClaimTooLong)?;
+			
+			ensure!(!Proofs::<T>::contains_key(bounded_claim.clone()),Error::<T>::ProofAlreadyExist);
+			let currrent_block = <frame_system::Pallet<T>>::block_number();
+			Proofs::<T>::insert(&bounded_claim, (sender.clone(), currrent_block));
 			Self::deposit_event(Event::ClaimCreated(sender, claim));
-			Ok(())
+			Ok(().into())
 		}
 
 		#[pallet::weight(0)]
 		pub fn remove_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			ensure!(Proofs::<T>::contains_key(&claim),Error::<T>ClaimNotExist);
-			let Some((owner, _)) = Proofs::<T>::get(&claim);
-			ensure!(sender == ownner,Error::<T>NotClaimOwner);
-			Proofs::<T>::remove(&claim);
+			let bounded_claim = BoundedVec::<u8,T::MaxClinetLenght>::try_from(claim.clone())
+				.map_err(|_|Error::<T>::ClaimTooLong)?;
+			//ensure!(Proofs::<T>::contains_key(bounded_claim.clone()),Error::<T>::ClaimNotExist);
+
+			let (owner, _) = Proofs::<T>::get(&bounded_claim).ok_or(Error::<T>::ClaimNotExist)?;
+
+			ensure!(sender == owner,Error::<T>::NotClaimOwner);
+			Proofs::<T>::remove(&bounded_claim);
 			Self::deposit_event(Event::ClaimRevoked(sender, claim));
-			Ok(())
+			Ok(().into())
 		}
 	}
 }
