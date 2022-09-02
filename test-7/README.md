@@ -31,4 +31,4 @@ test tests::revoke_not_claim_owner ... ok
 
 test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
-[img](2022-09-0223.34.59.png)
+![img](2022-09-0223.34.59.png)
