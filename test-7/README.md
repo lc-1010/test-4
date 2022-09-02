@@ -2,7 +2,7 @@
 
 - [x] 创建存证测试
 - [x] 撤销存证
-- [ ] 转移存证
+- [x] 转移存证
 
 ## cargo test
 
@@ -10,25 +10,25 @@
 
 - 脚本
 ```shell
-cargo test -p pallet-poe
-    Finished test [unoptimized + debuginfo] target(s) in 0.76s
-     Running unittests src/lib.rs (target/debug/deps/pallet_poe-541529f86a8e0aa9)
+ cargo test --package pallet-poe --lib -- tests --nocapture 
 
-running 6 tests
+    Finished test [unoptimized + debuginfo] target(s) in 0.21s
+     Running unittests src/lib.rs (target/debug/deps/pallet_poe-f56fe88d88f715e4)
+
+running 12 tests
 test mock::__construct_runtime_integrity_test::runtime_integrity_tests ... ok
-test tests::create_claim_already_exist ... ok
-test tests::not_claim_owner ... ok
-test tests::claim_not_exist ... ok
 test tests::create_claim ... ok
+test tests::create_claim_already_exist ... ok
+test tests::claim_transfer_not_owner ... ok
+test tests::claim_transfer_claim_toolong ... ok
+test tests::claim_transfer_not_exist ... ok
+test tests::claim_transfer ... ok
+test tests::create_claim_toolong ... ok
+test tests::claim_revoke_not_exist ... ok
+test tests::revoke_claim_toolong ... ok
 test tests::revoke_claim ... ok
+test tests::revoke_not_claim_owner ... ok
 
-
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
-
-   Doc-tests pallet-poe
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
+[img](2022-09-0223.34.59.png)
