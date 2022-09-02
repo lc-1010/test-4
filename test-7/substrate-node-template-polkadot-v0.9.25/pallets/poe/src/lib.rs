@@ -2,6 +2,12 @@
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
@@ -26,7 +32,7 @@ pub mod pallet {
 		BoundedVec<u8, T::MaxClinetLenght>,
 		(T::AccountId, T::BlockNumber),
 	>;
-    
+
     #[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -56,7 +62,7 @@ pub mod pallet {
 
 			let bounded_claim = BoundedVec::<u8,T::MaxClinetLenght>::try_from(claim.clone())
 				.map_err(|_|Error::<T>::ClaimTooLong)?;
-			
+
 			ensure!(!Proofs::<T>::contains_key(bounded_claim.clone()),Error::<T>::ProofAlreadyExist);
 			let currrent_block = <frame_system::Pallet<T>>::block_number();
 			Proofs::<T>::insert(&bounded_claim, (sender.clone(), currrent_block));
