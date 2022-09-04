@@ -36,7 +36,10 @@ test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 ![img](2022-09-0223.34.59.png)
 
 ## kittes 模块
+
 - 增加买卖 extrinsic
 - 不再pallet中指定，在runtime中绑定
 - test 模块
 - 引入 balances 内方法，质押token，购买时支付token
+
+- 参考 ![treasury](https://github.com/paritytech/substrate/tree/master/frame/treasury)
