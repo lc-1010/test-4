@@ -1,6 +1,6 @@
 [package]
 name = "pallet-kittes"
-version = "0.1"
+version = "4.0.0-dev"
 edition = "2021"
 license = "Unlicense"
 [package.metadata.docs.rs]
@@ -8,12 +8,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 
 [dependencies]
-codec= {
-  package = "parity-scale-codec",
-  version = "3.0.0",
-  default-features = false,
-  features = ["derive"]
-}
+codec = { package = "parity-scale-codec",version = "3.0.0", default-features = false,features = ["derive",] }
 
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
