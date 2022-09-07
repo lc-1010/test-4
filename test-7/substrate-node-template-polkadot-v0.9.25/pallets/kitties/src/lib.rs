@@ -15,10 +15,10 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	//sp_io at the cargo.toml  [dependencies] table
-	use sp_io::prelude::*;
-
-	type KittyIndex = u32;
-
+    use frame_support::traits::Randomness;
+    use sp_io::hashing::blake2_128;
+	
+    type KittyIndex = u32;
 	#[pallet::type_value]
 	pub fn GetDefaultValue() -> KittyIndex {
 		0_u32
@@ -33,6 +33,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		// - constant value
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 	}
 
 	#[pallet::pallet]
@@ -54,10 +55,9 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		KittyCreated(T::AccountId, KittyIndex, Kitty),
-		KittyAdopt(T::AccountId, Vec<u8>),
-		KittyBreed(T::AccountId, Vec<u8>),
-		KittyTransfor(T::AccountId, Vec<u8>),
+		KittyCreated(T::AccountId, KittyIndex, Kitty), 
+		// KittyBreed(T::AccountId, Vec<u8>),
+		KittyTransfor(T::AccountId, T::AccountId,KittyIndex),
 	}
 
 	#[pallet::error]
@@ -82,7 +82,7 @@ pub mod pallet {
 			let dna = Self::random_value(&who);
 			let kitty = Kitty(dna);
 
-			Self::storage_kitty(kitty_id, kitty, who);
+			Self::storage_kitty(kitty_id, &kitty, &who);
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, kitty));
 			Ok(())
 		}
@@ -106,26 +106,39 @@ pub mod pallet {
 
 			let mut data = [0u8; 16];
 			for i in 0..kitty_1.0.len() {
-				data[i] = (kitty_1.0[i] & selecter[i] | (kitty_2.0[i] & !selecter[i]));
+                // choose kitty2 and 1 choose kitty1
+				data[i] = (kitty_1.0[i] & selecter[i] ) | (kitty_2.0[i] & !selecter[i]);
 			}
 
 			let new_kitty = Kitty(data);
 
-			Self::storage_kitty(kitty_id, new_kitty, who);
+			Self::storage_kitty(kitty_id, &new_kitty, &who);
 
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, new_kitty));
 			// check kitty id -2
 
 			Ok(())
 		}
+
+        #[pallet::weight(10_000)]
+        pub fn transfor(origin:OriginFor<T>, kitty_id: u32, new_owner:T::AccountId)->DispatchResult{
+            let sender = ensure_signed(origin)?;
+            Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
+            ensure!(Self::kitty_owner(kitty_id)==Some(sender.clone()),Error::<T>::NotKittyOwner);
+            KittyOwner::<T>::insert(kitty_id,&sender);
+            Self::deposit_event(Event::KittyTransfor(sender,new_owner,kitty_id));
+            Ok(())
+        }
 	}
 
 	impl<T: Config> Pallet<T> {
 		// 輔助函數
+
+        
 		// get a random 256
 		fn random_value(sender: &T::AccountId) -> [u8; 16] {
 			let palyload = (
-				T::Randomness::random_send(),
+				T::Randomness::random_seed(),
 				&sender,
 				<frame_system::Pallet<T>>::extrinsic_index(),
 			);
@@ -135,7 +148,7 @@ pub mod pallet {
 		// get next id
 		fn get_next_id() -> Result<KittyIndex, ()> {
 			match Self::next_kitty_id() {
-				KittyIndex::Max => Err(()),
+				KittyIndex::MAX => Err(()),
 				val => Ok(val),
 			}
 		}
@@ -149,10 +162,12 @@ pub mod pallet {
 		}
 
 		// new  kitty storage
-		fn storage_kitty(kitty_id: KittyIndex, kitty: Kitty, who: T::AccountId) {
-			Kitties::<T>::insert(kitty_id, &kitty);
-			KittyOwner::<T>::insert(kitty_id, &who);
+		fn storage_kitty(kitty_id: KittyIndex, kitty: &Kitty, who: & T::AccountId) {
+			Kitties::<T>::insert(kitty_id, kitty);
+			KittyOwner::<T>::insert(kitty_id, who);
 			NextKiityId::<T>::set(kitty_id + 1);
 		}
+
+        
 	}
 }
