@@ -11,17 +11,27 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 
-	// - import mod
-	use frame_support::pallet_prelude::*;
+	use core::ops::Add;
+
+use codec::MaxEncodedLen;
+// - import mod
+	use frame_support::{pallet_prelude::*, Parameter};
 	use frame_system::pallet_prelude::*;
 	//sp_io at the cargo.toml  [dependencies] table
     use frame_support::traits::Randomness;
-    use sp_io::hashing::blake2_128;
-	
-    type KittyIndex = u32;
+    use sp_io::hashing::blake2_128; 
+    use frame_support::traits::Currency;
+    use frame_support::traits::LockableCurrency;
+	use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::traits::Bounded;
+use sp_runtime::traits::CheckedAdd;
+use sp_runtime::traits::One;
+use sp_runtime::traits::One;
+    
+    //type KittyIndex = u32;
 	#[pallet::type_value]
-	pub fn GetDefaultValue() -> KittyIndex {
-		0_u32
+	pub fn GetDefaultValue<T:Config>() ->T::KittyIndex{
+		0_u32.into()  
 	}
 
 	// - kitty map save
@@ -33,7 +43,19 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		// - constant value
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+        type Randomness: Randomness<Self::Hash, Self::BlockNumber>;  
+        type Currency: LockableCurrency<Self::AccountId, Moment=Self::BlockNumber>;
+        type KittyIndex: Parameter
+        +Get<u32>
+        + Member
+        + AtLeast32BitUnsigned
+        + Bounded
+        + One
+        + Default
+        +From<u32>
+        +Copy
+        +Add<u32,Output=Self::KittyIndex>;
+        
 	}
 
 	#[pallet::pallet]
@@ -42,22 +64,27 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn next_kitty_id)]
-	pub type NextKiityId<T> = StorageValue<_, KittyIndex, ValueQuery, GetDefaultValue>;
+	pub type NextKittyId<T:Config> = StorageValue<_, T::KittyIndex, ValueQuery, GetDefaultValue<T>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kittes)]
-	pub type Kitties<T> = StorageMap<_, Blake2_128Concat, KittyIndex, Kitty>;
+	pub type Kitties<T:Config> = StorageMap<_, Blake2_128Concat,T::KittyIndex, Kitty>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kitty_owner)]
-	pub type KittyOwner<T: Config> = StorageMap<_, Blake2_128Concat, KittyIndex, T::AccountId>;
-	// - defined Event
+	pub type KittyOwner<T: Config> = StorageMap<_, Blake2_128Concat, T::KittyIndex, T::AccountId>;
+	
+    pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+    pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance; 
+     
+    
+    // - defined Event
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		KittyCreated(T::AccountId, KittyIndex, Kitty), 
+		KittyCreated(T::AccountId, T::KittyIndex, Kitty), 
 		// KittyBreed(T::AccountId, Vec<u8>),
-		KittyTransfor(T::AccountId, T::AccountId,KittyIndex),
+		KittyTransfor(T::AccountId, T::AccountId,T::KittyIndex),
 	}
 
 	#[pallet::error]
@@ -67,6 +94,7 @@ pub mod pallet {
 		NotKittyOwner,
 		InvaidKittyId,
 		SameKittyId,
+        
 	}
 
 	#[pallet::hooks]
@@ -82,7 +110,7 @@ pub mod pallet {
 			let dna = Self::random_value(&who);
 			let kitty = Kitty(dna);
 
-			Self::storage_kitty(kitty_id, &kitty, &who);
+			Self::storage_kitty(kitty_id, &kitty, &who)?;
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, kitty));
 			Ok(())
 		}
@@ -90,8 +118,8 @@ pub mod pallet {
 		#[pallet::weight(10_000)]
 		pub fn breed(
 			origin: OriginFor<T>,
-			kitty_id_1: KittyIndex,
-			kitty_id_2: KittyIndex,
+			kitty_id_1: T::KittyIndex,
+			kitty_id_2: T::KittyIndex,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(kitty_id_1 != kitty_id_2, Error::<T>::SameKittyId);
@@ -121,7 +149,7 @@ pub mod pallet {
 		}
 
         #[pallet::weight(10_000)]
-        pub fn transfor(origin:OriginFor<T>, kitty_id: u32, new_owner:T::AccountId)->DispatchResult{
+        pub fn transfor(origin:OriginFor<T>, kitty_id: T::KittyIndex, new_owner:T::AccountId)->DispatchResult{
             let sender = ensure_signed(origin)?;
             Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
             ensure!(Self::kitty_owner(kitty_id)==Some(sender.clone()),Error::<T>::NotKittyOwner);
@@ -129,12 +157,17 @@ pub mod pallet {
             Self::deposit_event(Event::KittyTransfor(sender,new_owner,kitty_id));
             Ok(())
         }
+
+        #[pallet::weight(10_000)]
+        pub fn bug(origin:OriginFor<T>,kitty_id: T::KittyIndex,seller:T::AccountId)->DispatchResult{
+             
+            
+            Ok(())
+        }
 	}
 
 	impl<T: Config> Pallet<T> {
-		// 輔助函數
-
-        
+		// 輔助函數 
 		// get a random 256
 		fn random_value(sender: &T::AccountId) -> [u8; 16] {
 			let palyload = (
@@ -146,15 +179,18 @@ pub mod pallet {
 		}
 
 		// get next id
-		fn get_next_id() -> Result<KittyIndex, ()> {
+		fn get_next_id() -> Result<T::KittyIndex, ()> {
 			match Self::next_kitty_id() {
-				KittyIndex::MAX => Err(()),
-				val => Ok(val),
+				Some(id)=> {
+                    T::KittyIndex::max_value()  
+				 
+                },
+                _ => Err(()),
 			}
 		}
 
 		// get kitty via id
-		fn get_kitty(kitty_id: KittyIndex) -> Result<Kitty, ()> {
+		fn get_kitty(kitty_id: T::KittyIndex) -> Result<Kitty, ()> {
 			match Self::kittes(kitty_id) {
 				Some(kitty) => Ok(kitty),
 				None => Err(()),
@@ -162,12 +198,15 @@ pub mod pallet {
 		}
 
 		// new  kitty storage
-		fn storage_kitty(kitty_id: KittyIndex, kitty: &Kitty, who: & T::AccountId) {
+		fn storage_kitty(kitty_id: T::KittyIndex, kitty: &Kitty, who: & T::AccountId)->DispatchResult {
 			Kitties::<T>::insert(kitty_id, kitty);
-			KittyOwner::<T>::insert(kitty_id, who);
-			NextKiityId::<T>::set(kitty_id + 1);
+			KittyOwner::<T>::insert(kitty_id, who); 
+            NextKittyId::<T>::set(kitty_id.checked_add(1).ok_or(Error::<T>::InvaidKittyId)?);
+            Ok(())
 		}
 
-        
+        fn checked_add(nuber:u32){
+            
+        }
 	}
 }
