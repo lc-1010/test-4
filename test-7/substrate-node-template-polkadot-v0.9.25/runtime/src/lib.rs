@@ -67,6 +67,7 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+//绑定 runtime
 pub type KittyIndex = u32;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -145,6 +146,8 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+	pub const MinLock: u64 = 1;
+
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -280,7 +283,7 @@ impl pallet_kitties::Config for Runtime {
 	type Randomness = RandomnessCollectiveFlip;
 	type KittyIndex = KittyIndex;
 	type Currency = Balances;
-	type MinLock = ConstU32<512>;
+	type MinLock = MinLock;
 	//randomness  实现
 }
 
