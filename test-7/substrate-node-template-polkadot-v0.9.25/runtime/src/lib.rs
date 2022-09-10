@@ -39,6 +39,7 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
+ 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
@@ -66,6 +67,7 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+pub type KittyIndex = u32;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -197,6 +199,7 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
+
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
@@ -275,6 +278,9 @@ impl pallet_poe::Config for Runtime {
 impl pallet_kitties::Config for Runtime {
 	type Event =  Event;
 	type Randomness = RandomnessCollectiveFlip;
+	type KittyIndex = KittyIndex;
+	type Currency = Balances;
+	type MinLock = ConstU32<512>;
 	//randomness  实现
 }
 

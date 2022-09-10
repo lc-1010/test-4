@@ -11,23 +11,23 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 
-	use core::ops::Add;
-
-use codec::MaxEncodedLen;
+    
 // - import mod
 	use frame_support::{pallet_prelude::*, Parameter};
 	use frame_system::pallet_prelude::*;
 	//sp_io at the cargo.toml  [dependencies] table
     use frame_support::traits::Randomness;
     use sp_io::hashing::blake2_128; 
-    use frame_support::traits::Currency;
-    use frame_support::traits::LockableCurrency;
+     
+    use frame_support::traits::{Currency,ReservableCurrency,ExistenceRequirement, LockableCurrency};
+ 
 	use sp_runtime::traits::AtLeast32BitUnsigned;
-use sp_runtime::traits::Bounded;
-use sp_runtime::traits::CheckedAdd;
-use sp_runtime::traits::One;
-use sp_runtime::traits::One;
+    use sp_runtime::traits::Bounded;
+    use sp_runtime::traits::One;
+    use sp_runtime::traits::CheckedAdd;
     
+   
+
     //type KittyIndex = u32;
 	#[pallet::type_value]
 	pub fn GetDefaultValue<T:Config>() ->T::KittyIndex{
@@ -44,18 +44,19 @@ use sp_runtime::traits::One;
 		// - constant value
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Randomness: Randomness<Self::Hash, Self::BlockNumber>;  
-        type Currency: LockableCurrency<Self::AccountId, Moment=Self::BlockNumber>;
+        type Currency: ReservableCurrency<Self::AccountId>+ Currency<Self::AccountId> + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
         type KittyIndex: Parameter
-        +Get<u32>
         + Member
         + AtLeast32BitUnsigned
         + Bounded
         + One
         + Default
-        +From<u32>
         +Copy
-        +Add<u32,Output=Self::KittyIndex>;
-        
+        +MaybeSerializeDeserialize
+        + MaxEncodedLen
+       ;
+        #[pallet::constant]
+        type MinLock: Get<BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -83,8 +84,10 @@ use sp_runtime::traits::One;
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		KittyCreated(T::AccountId, T::KittyIndex, Kitty), 
-		// KittyBreed(T::AccountId, Vec<u8>),
+		KittyBreed(T::AccountId, T::KittyIndex),
 		KittyTransfor(T::AccountId, T::AccountId,T::KittyIndex),
+        SellKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
+        BuyKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
 	}
 
 	#[pallet::error]
@@ -94,7 +97,8 @@ use sp_runtime::traits::One;
 		NotKittyOwner,
 		InvaidKittyId,
 		SameKittyId,
-        
+        KittyIndexOverFlow,
+        MoneyNotEnough, 
 	}
 
 	#[pallet::hooks]
@@ -103,14 +107,15 @@ use sp_runtime::traits::One;
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_00)]
-		pub fn create(origin: OriginFor<T>) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>,) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
 			let kitty_id = Self::get_next_id().map_err(|_| Error::<T>::InvaidKittyId)?;
 			let dna = Self::random_value(&who);
-			let kitty = Kitty(dna);
-
-			Self::storage_kitty(kitty_id, &kitty, &who)?;
+			let kitty = Kitty(dna); 
+            //锁定钱
+            T::Currency::reserve(&who,T::MinLock::get())?;
+            Self::storage_kitty(kitty_id, &kitty, &who);
+            Self::set_next_id(kitty_id)?; 
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, kitty));
 			Ok(())
 		}
@@ -141,8 +146,8 @@ use sp_runtime::traits::One;
 			let new_kitty = Kitty(data);
 
 			Self::storage_kitty(kitty_id, &new_kitty, &who);
-
-			Self::deposit_event(Event::KittyCreated(who, kitty_id, new_kitty));
+            Self::set_next_id(kitty_id)?; 
+			Self::deposit_event(Event::KittyBreed(who, kitty_id));
 			// check kitty id -2
 
 			Ok(())
@@ -150,20 +155,45 @@ use sp_runtime::traits::One;
 
         #[pallet::weight(10_000)]
         pub fn transfor(origin:OriginFor<T>, kitty_id: T::KittyIndex, new_owner:T::AccountId)->DispatchResult{
-            let sender = ensure_signed(origin)?;
-            Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
-            ensure!(Self::kitty_owner(kitty_id)==Some(sender.clone()),Error::<T>::NotKittyOwner);
+            let  sender = Self::before_transfor_check_owner(origin,kitty_id)?;
             KittyOwner::<T>::insert(kitty_id,&sender);
+            //质押 
+            T::Currency::reserve(&new_owner,T::MinLock::get())?;
+            let sender_balance = T::Currency::unreserve(&sender,T::MinLock::get());
+            
+            log::info!("释放质押后balan {:?}",sender_balance);
             Self::deposit_event(Event::KittyTransfor(sender,new_owner,kitty_id));
+            Ok(())
+        }
+         
+        #[pallet::weight(10_000)]
+        pub fn sell(origin:OriginFor<T>,kitty_id: T::KittyIndex,buyer:T::AccountId,price:BalanceOf<T> )->DispatchResult{
+             let who = ensure_signed(origin.clone())?;
+            //校验钱包 
+            let total = price + T::MinLock::get();
+            ensure!(T::Currency::can_slash(&who,total),Error::<T>::MoneyNotEnough);
+            //扣押钱包
+            T::Currency::transfer(&buyer,&who,price,ExistenceRequirement::KeepAlive)?;
+            //转移
+            Self::transfor(origin,kitty_id,buyer.clone())?; 
+            Self::deposit_event(Event::SellKitty(buyer,who,price,kitty_id)); 
             Ok(())
         }
 
         #[pallet::weight(10_000)]
-        pub fn bug(origin:OriginFor<T>,kitty_id: T::KittyIndex,seller:T::AccountId)->DispatchResult{
-             
-            
-            Ok(())
-        }
+        pub fn buy(origin:OriginFor<T>,kitty_id: T::KittyIndex,owner:T::AccountId,price:BalanceOf<T> )->DispatchResult{
+            let who = ensure_signed(origin.clone())?;
+           //校验钱包 
+           let total = price + T::MinLock::get();
+           ensure!(T::Currency::can_slash(&who,total),Error::<T>::MoneyNotEnough);
+           //扣押钱包
+           T::Currency::transfer(&who,&who,price,ExistenceRequirement::KeepAlive)?;
+           //转移
+           Self::transfor(origin,kitty_id,who.clone())?; 
+           Self::deposit_event(Event::SellKitty(who,owner,price,kitty_id)); 
+           Ok(())
+       }
+         
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -179,13 +209,12 @@ use sp_runtime::traits::One;
 		}
 
 		// get next id
-		fn get_next_id() -> Result<T::KittyIndex, ()> {
+		fn get_next_id() -> Result<T::KittyIndex, Error<T>> {
 			match Self::next_kitty_id() {
-				Some(id)=> {
-                    T::KittyIndex::max_value()  
-				 
-                },
-                _ => Err(()),
+                val => {
+                    ensure!(val!= T::KittyIndex::max_value(), Error::<T>::KittyIndexOverFlow);
+                    Ok(val)
+                }, 
 			}
 		}
 
@@ -198,15 +227,30 @@ use sp_runtime::traits::One;
 		}
 
 		// new  kitty storage
-		fn storage_kitty(kitty_id: T::KittyIndex, kitty: &Kitty, who: & T::AccountId)->DispatchResult {
+		fn storage_kitty(kitty_id: T::KittyIndex, kitty: &Kitty, who: & T::AccountId) {
 			Kitties::<T>::insert(kitty_id, kitty);
 			KittyOwner::<T>::insert(kitty_id, who); 
-            NextKittyId::<T>::set(kitty_id.checked_add(1).ok_or(Error::<T>::InvaidKittyId)?);
-            Ok(())
 		}
 
-        fn checked_add(nuber:u32){
-            
+        fn set_next_id(kitty_id: T::KittyIndex)->Result<(),DispatchError >{
+
+            let id = T::KittyIndex::one();
+            let next_id = kitty_id.checked_add(&id).ok_or(
+                Error::<T>::KittyIndexOverFlow
+            )?;
+            NextKittyId::<T>::set(next_id);
+            Ok(())
         }
+
+        // 交易 转移检查
+        fn before_transfor_check_owner(origin:OriginFor<T>, kitty_id: T::KittyIndex)->Result<T::AccountId,DispatchError>{
+            let who = ensure_signed(origin)?;
+            Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
+            ensure!(Self::kitty_owner(kitty_id)==Some(who.clone()),Error::<T>::NotKittyOwner);
+            Ok(who)
+        }
+
+        
+         
 	}
 }
