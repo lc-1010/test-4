@@ -7,6 +7,11 @@ pub use pallet::*;
  - 赠与
  与之前的poe 模块类似，但是扩展内容包括，质押和使用token,使用balance 模块相关功能,同时编写测试代码
 */
+// #[cfg(test)]
+// mod mock;
+
+// #[cfg(test)]
+// mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -189,8 +194,18 @@ pub mod pallet {
            //扣押钱包
            T::Currency::transfer(&who,&who,price,ExistenceRequirement::KeepAlive)?;
            //转移
-           Self::transfor(origin,kitty_id,who.clone())?; 
-           Self::deposit_event(Event::SellKitty(who,owner,price,kitty_id)); 
+		   
+           //Self::transfor(owner,kitty_id,who.clone())?; 
+		 
+		   KittyOwner::<T>::insert(kitty_id,&who);
+		   //质押 
+		   T::Currency::reserve(&who,T::MinLock::get())?;
+		   let sender_balance = T::Currency::unreserve(&owner,T::MinLock::get());
+		   
+		   log::info!("释放质押后balan {:?}",sender_balance);
+		   Self::deposit_event(Event::KittyTransfor(who.clone(),owner.clone(),kitty_id));
+			
+           Self::deposit_event(Event::BuyKitty(who,owner,price,kitty_id)); 
            Ok(())
        }
          
