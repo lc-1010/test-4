@@ -94,4 +94,9 @@ cargo build --release
    ![img](kitty-1/check-2022-09-1021.00.54.png)
 
 - [检测账户](https://github.com/lc-1010/test-4/blob/dfc3cc3e66b89dc92a46e865246bb8c1cf830c9b/test-7/substrate-node-template-polkadot-v0.9.25/pallets/kitties/src/lib.rs#L261)
- 
+
+## 测试 
+-  
+## 前端页面
+
+- 
