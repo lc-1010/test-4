@@ -137,6 +137,7 @@ pub fn native_version() -> NativeVersion {
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
+//使用parameter_types宏生成一些后面功能模块所需的满足Get接口的数据类型
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
 	pub const Version: RuntimeVersion = VERSION;
@@ -147,6 +148,7 @@ parameter_types! {
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
 	pub const MinLock: u64 = 1;
+	//pub const MaxKittyIndex:u64 = u64::MAX;
 
 }
 
@@ -284,6 +286,7 @@ impl pallet_kitties::Config for Runtime {
 	type KittyIndex = KittyIndex;
 	type Currency = Balances;
 	type MinLock = MinLock;
+	//type MaxKittyIndex = MaxKittyIndex;
 	//randomness  实现
 }
 

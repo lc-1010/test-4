@@ -17,6 +17,9 @@ pub use pallet::*;
 pub mod pallet {
 
     
+	use frame_support::pallet_prelude::ValueQuery;
+	use frame_support::{Blake2_128Concat, BoundedVec};
+
 // - import mod
 	use frame_support::{pallet_prelude::*, Parameter};
 	use frame_system::pallet_prelude::*;
@@ -30,16 +33,9 @@ pub mod pallet {
     use sp_runtime::traits::Bounded;
     use sp_runtime::traits::One;
     use sp_runtime::traits::CheckedAdd;
-    
-   
-
-    //type KittyIndex = u32;
-	#[pallet::type_value]
-	pub fn GetDefaultValue<T:Config>() ->T::KittyIndex{
-		0_u32.into()  
-	}
 
 	// - kitty map save
+	// 定义一个kitty u8 16 个字节 dna
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct Kitty(pub [u8; 16]);
 
@@ -50,18 +46,24 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Randomness: Randomness<Self::Hash, Self::BlockNumber>;  
         type Currency: ReservableCurrency<Self::AccountId>+ Currency<Self::AccountId> + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-        type KittyIndex: Parameter
+        
+		// runtime 设置 	
+		type KittyIndex: Parameter
         + Member
         + AtLeast32BitUnsigned
         + Bounded
         + One
         + Default
-        +Copy
-        +MaybeSerializeDeserialize
-        + MaxEncodedLen
-       ;
+        + Copy
+        + MaybeSerializeDeserialize
+        + MaxEncodedLen;
+
+		// runtime 设置 
         #[pallet::constant]
         type MinLock: Get<BalanceOf<Self>>;
+		//最大值 
+		//#[pallet::constant]
+		//type MaxKittyIndex:Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -71,18 +73,41 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn next_kitty_id)]
 	pub type NextKittyId<T:Config> = StorageValue<_, T::KittyIndex, ValueQuery, GetDefaultValue<T>>;
+	// ValueQuey 存储 默认值0 
 
 	#[pallet::storage]
 	#[pallet::getter(fn kittes)]
 	pub type Kitties<T:Config> = StorageMap<_, Blake2_128Concat,T::KittyIndex, Kitty>;
+	// storageMap 存储 index-》kitty 
 
 	#[pallet::storage]
 	#[pallet::getter(fn kitty_owner)]
 	pub type KittyOwner<T: Config> = StorageMap<_, Blake2_128Concat, T::KittyIndex, T::AccountId>;
-	
+
+	//the AccountId has how many kitties ,get all user kitties
+	// #[pallet::storage]
+	// #[pallet::getter(fn all_kitties)]
+	// pub type Allkitties<T:Config> = StorageMap<
+	// _,
+	// Blake2_128Concat,
+	// T::AccountId,
+	// BoundedVec<T::KittyIndex,T::MaxKittyIndex>,//check max value ,BoundedVec 
+	// ValueQuery,	
+	// >;
+
+	//账户类型引用balance 模块
     pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-    pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance; 
-     
+    
+	pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance; 
+    
+	
+
+	 //type KittyIndex = u32;
+	// 默认值 kitty index 
+	#[pallet::type_value]
+	pub fn GetDefaultValue<T:Config>() ->T::KittyIndex{
+		0_u32.into()  
+	}
     
     // - defined Event
 	#[pallet::event]
@@ -265,7 +290,10 @@ pub mod pallet {
             Ok(who)
         }
 
-        
+        //  sava all kitties
+		// fn _set_all_kitties(){
+		// 	//Allkitties::<T>::insert(uid, )
+		// }
          
 	}
 }
