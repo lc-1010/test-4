@@ -115,7 +115,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		KittyCreated(T::AccountId, T::KittyIndex, Kitty), 
 		KittyBreed(T::AccountId, T::KittyIndex),
-		KittyTransfor(T::AccountId, T::AccountId,T::KittyIndex),
+		KittyTransfer(T::AccountId, T::AccountId,T::KittyIndex),
         SellKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
         BuyKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
 	}
@@ -139,7 +139,7 @@ pub mod pallet {
 		#[pallet::weight(10_00)]
 		pub fn create(origin: OriginFor<T>,) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let kitty_id = Self::get_next_id().map_err(|_| Error::<T>::InvaidKittyId)?;
+			let kitty_id = Self::get_next_id().map_err(|_| Error::<T>::KittyIndexOverFlow)?;
 			let dna = Self::random_value(&who);
 			let kitty = Kitty(dna); 
             //锁定钱
@@ -185,15 +185,15 @@ pub mod pallet {
 		}
 
         #[pallet::weight(10_000)]
-        pub fn transfor(origin:OriginFor<T>, kitty_id: T::KittyIndex, new_owner:T::AccountId)->DispatchResult{
-            let  sender = Self::before_transfor_check_owner(origin,kitty_id)?;
-            KittyOwner::<T>::insert(kitty_id,&sender);
+        pub fn transfer(origin:OriginFor<T>, kitty_id: T::KittyIndex, new_owner:T::AccountId)->DispatchResult{
+            let  sender = Self::before_transfer_check_owner(origin,kitty_id)?;
+            KittyOwner::<T>::insert(kitty_id,&new_owner);
             //质押 
             T::Currency::reserve(&new_owner,T::MinLock::get())?;
-            let sender_balance = T::Currency::unreserve(&sender,T::MinLock::get());
+            let _sender_balance = T::Currency::unreserve(&sender,T::MinLock::get());
             
-            log::info!("释放质押后balan {:?}",sender_balance);
-            Self::deposit_event(Event::KittyTransfor(sender,new_owner,kitty_id));
+            //log::info!("释放质押后balan {:?}",sender_balance);
+            Self::deposit_event(Event::KittyTransfer(sender,new_owner,kitty_id));
             Ok(())
         }
          
@@ -206,7 +206,7 @@ pub mod pallet {
             //扣押钱包
             T::Currency::transfer(&buyer,&who,price,ExistenceRequirement::KeepAlive)?;
             //转移
-            Self::transfor(origin,kitty_id,buyer.clone())?; 
+            Self::transfer(origin,kitty_id,buyer.clone())?; 
             Self::deposit_event(Event::SellKitty(buyer,who,price,kitty_id)); 
             Ok(())
         }
@@ -221,7 +221,7 @@ pub mod pallet {
            T::Currency::transfer(&who,&who,price,ExistenceRequirement::KeepAlive)?;
            //转移
 		   
-           //Self::transfor(owner,kitty_id,who.clone())?; 
+           //Self::transfer(owner,kitty_id,who.clone())?; 
 		 
 		   KittyOwner::<T>::insert(kitty_id,&who);
 		   //质押 
@@ -229,7 +229,7 @@ pub mod pallet {
 		   let sender_balance = T::Currency::unreserve(&owner,T::MinLock::get());
 		   
 		   log::info!("释放质押后balan {:?}",sender_balance);
-		   Self::deposit_event(Event::KittyTransfor(who.clone(),owner.clone(),kitty_id));
+		   Self::deposit_event(Event::KittyTransfer(who.clone(),owner.clone(),kitty_id));
 			
            Self::deposit_event(Event::BuyKitty(who,owner,price,kitty_id)); 
            Ok(())
@@ -253,7 +253,7 @@ pub mod pallet {
 		fn get_next_id() -> Result<T::KittyIndex, Error<T>> {
 			match Self::next_kitty_id() {
                 val => {
-                    ensure!(val!= T::KittyIndex::max_value(), Error::<T>::KittyIndexOverFlow);
+                    ensure!(val!=T::KittyIndex::max_value(), Error::<T>::KittyIndexOverFlow);
                     Ok(val)
                 }, 
 			}
@@ -273,7 +273,7 @@ pub mod pallet {
 			KittyOwner::<T>::insert(kitty_id, who); 
 		}
 
-        fn set_next_id(kitty_id: T::KittyIndex)->Result<(),DispatchError >{
+        pub(crate) fn set_next_id(kitty_id: T::KittyIndex)->Result<(),DispatchError >{
 
             let id = T::KittyIndex::one();
             let next_id = kitty_id.checked_add(&id).ok_or(
@@ -284,7 +284,7 @@ pub mod pallet {
         }
 
         // 交易 转移检查
-        fn before_transfor_check_owner(origin:OriginFor<T>, kitty_id: T::KittyIndex)->Result<T::AccountId,DispatchError>{
+        fn before_transfer_check_owner(origin:OriginFor<T>, kitty_id: T::KittyIndex)->Result<T::AccountId,DispatchError>{
             let who = ensure_signed(origin)?;
             Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
             ensure!(Self::kitty_owner(kitty_id)==Some(who.clone()),Error::<T>::NotKittyOwner);

@@ -26,6 +26,8 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		//随机dna
 		Randomness: pallet_randomness_collective_flip::{Pallet, Storage},
+		 
+
 	}
 );
 
@@ -113,8 +115,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	.assimilate_storage(&mut t)
 	.unwrap();
 	 
-
+	
 	let mut ext = sp_io::TestExternalities::new(t);
-	ext.execute_with(|| System::set_block_number(1));
+	ext.execute_with(|| System::set_block_number(1));//设置起始区块的高度
+	
 	ext
 }
