@@ -7,18 +7,18 @@ pub use pallet::*;
  - 赠与
  与之前的poe 模块类似，但是扩展内容包括，质押和使用token,使用balance 模块相关功能,同时编写测试代码
 */
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
 
     
 	use frame_support::pallet_prelude::ValueQuery;
-	use frame_support::{Blake2_128Concat, BoundedVec};
+	use frame_support::{Blake2_128Concat};
 
 // - import mod
 	use frame_support::{pallet_prelude::*, Parameter};
@@ -143,7 +143,8 @@ pub mod pallet {
 			let dna = Self::random_value(&who);
 			let kitty = Kitty(dna); 
             //锁定钱
-            T::Currency::reserve(&who,T::MinLock::get())?;
+            T::Currency::reserve(&who,T::MinLock::get())
+				.map_err(|_|Error::<T>::MoneyNotEnough)?;
             Self::storage_kitty(kitty_id, &kitty, &who);
             Self::set_next_id(kitty_id)?; 
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, kitty));

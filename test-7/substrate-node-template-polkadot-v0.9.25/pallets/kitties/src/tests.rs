@@ -1,23 +1,39 @@
 use super::*;
 use crate::{mock::*, Error};
-use super::{Event as KittyEvent};
-use frame_support::{assert_noop, assert_ok};
-use pallet_balances::Error as BalancesError;
-/*
- #[test]
-fn create_claim(){
-	new_test_ext().execute_with(||{
-		let claim = vec![0,1];
-		assert_ok!(PoeModule::create_claim(Origin::signed(1),claim.clone()));
-		let bounded_claim = BoundedVec::<u8,<Test as Config>::MaxClinetLenght>::try_from(claim.clone()).unwrap();
-		assert_eq!(Proofs::<Test>::get(&bounded_claim),
-		 Some((1,frame_system::Pallet::<Test>::block_number())));
-	})
-}
-*/
+use frame_support::{ assert_noop, assert_ok};
+
+/**
+ 		KittyAlreadExist,
+		KittyNotExist,
+		NotKittyOwner,
+		InvaidKittyId,
+		SameKittyId,
+        KittyIndexOverFlow,
+        MoneyNotEnough,
+ */
 #[test]
-fn create_kitty(){
+fn create_kitty_succes(){
 	new_test_ext().execute_with(||{
 		 
+		 assert_ok!(KittyModule::create(Origin::signed(1)));
+		 //所有者
+		 assert_eq!(KittyModule::kitty_owner(0),Some(1));
+		 //扣押
+		 assert_eq!(  Balances::reserved_balance(1), MinLock::get().try_into().unwrap());
+
+	})
+}
+#[test]
+fn create_kitty_error(){
+	new_test_ext().execute_with(||{
+		// let _ = Balances::set_balance(Origin::root(), 8, 1,1);
+		 assert_noop!(KittyModule::create(Origin::signed(6)),Error::<Test>::MoneyNotEnough);
+	})
+}
+
+#[test]
+fn bread_kitty(){
+	new_test_ext().execute_with(||{
+
 	})
 }

@@ -1,6 +1,7 @@
 use crate as pallet_kitties;
 use frame_support::{traits::{ConstU16, ConstU32, ConstU64, ConstU128}, parameter_types};
 use sp_core::H256;
+use frame_system as system;// 别名
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -17,15 +18,19 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
+		//系统
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Kitties: pallet_kitties::{Pallet, Call, Storage, Event<T>},
+		//runtime 中 kitty 模块
+		KittyModule: pallet_kitties::{Pallet, Call, Storage, Event<T>},
+		//账户模块
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		//随机dna
 		Randomness: pallet_randomness_collective_flip::{Pallet, Storage},
 	}
 );
 
-
-impl frame_system::Config for Test {
+//system 配置项目
+impl system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -52,6 +57,7 @@ impl frame_system::Config for Test {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+// 账户模块
 impl pallet_balances::Config for Test {
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ();
@@ -64,10 +70,13 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Test>;
 }
 
+// 重要实现
 impl pallet_randomness_collective_flip::Config for Test {}
 
 parameter_types! {
-	pub const Reserved: u128 = 10_000;
+	//pub const Reserved: u128 = 10_000;
+	// 创建一个kitty时要锁定的最小 金额 reserved 值
+	// 转移和卖出后释放
 	pub const MinLock: u32 = 3;
 }
 
@@ -75,32 +84,37 @@ impl pallet_kitties::Config for Test {
 	type Event = Event;
 	type Randomness = Randomness;
 	type KittyIndex = u32;
+	// 账户
 	type Currency = Balances;
-	type Reserved = Reserved;
+	// 配置
 	type MinLock=MinLock;
 }
 
-#[macro_export]
-macro_rules! assert_has_event 
-{
-	($x:expr) => 
-	{
-		System::assert_has_event(TestEvent::Kitties($x))	
-	};
-}
+// 宏
+// #[macro_export]
+// macro_rules! assert_has_event
+// {
+// 	($x:expr) =>
+// 	{
+// 		System::assert_has_event(TestEvent::Kitties($x))
+// 	};
+// }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		 
 
-	pallet_balances::GenesisConfig::<Test> 
+	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+
+	pallet_balances::GenesisConfig::<Test>
 	{
-		balances: vec![(1, 100_000_000_000), (2, 100_000_000_000), (3, 9999), (4, 20_000)],
+		balances: vec![(1, 100_000_000_000), (2, 100_000_000_000), (3, 9999), (4, 20_000),],
 	}
-	.assimilate_storage(&mut storage)
+	.assimilate_storage(&mut t)
 	.unwrap();
+	 
 
-	let mut ext = sp_io::TestExternalities::new(storage);
+	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
 	ext
 }
