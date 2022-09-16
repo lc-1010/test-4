@@ -39,15 +39,15 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
- 
+
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
+pub use pallet_kitties;
+pub use pallet_poe;
 /// Import the template pallet.
 pub use pallet_template;
-pub use pallet_poe;
-pub use pallet_kitties;
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -204,7 +204,6 @@ impl frame_system::Config for Runtime {
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
-
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
@@ -277,11 +276,11 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_poe::Config for Runtime {
 	type Event = Event;
-	type MaxClinetLenght = ConstU32<512>;	
+	type MaxClinetLenght = ConstU32<512>;
 }
 
 impl pallet_kitties::Config for Runtime {
-	type Event =  Event;
+	type Event = Event;
 	type Randomness = RandomnessCollectiveFlip;
 	type KittyIndex = KittyIndex;
 	type Currency = Balances;
@@ -355,7 +354,7 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
 		[pallet_template, TemplateModule]
-		
+
 	);
 }
 

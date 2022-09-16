@@ -16,23 +16,24 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 
-    
 	use frame_support::pallet_prelude::ValueQuery;
-	use frame_support::{Blake2_128Concat};
+	use frame_support::Blake2_128Concat;
 
-// - import mod
+	// - import mod
 	use frame_support::{pallet_prelude::*, Parameter};
 	use frame_system::pallet_prelude::*;
 	//sp_io at the cargo.toml  [dependencies] table
-    use frame_support::traits::Randomness;
-    use sp_io::hashing::blake2_128; 
-     
-    use frame_support::traits::{Currency,ReservableCurrency,ExistenceRequirement, LockableCurrency};
- 
+	use frame_support::traits::Randomness;
+	use sp_io::hashing::blake2_128;
+
+	use frame_support::traits::{
+		Currency, ExistenceRequirement, LockableCurrency, ReservableCurrency,
+	};
+
 	use sp_runtime::traits::AtLeast32BitUnsigned;
-    use sp_runtime::traits::Bounded;
-    use sp_runtime::traits::One;
-    use sp_runtime::traits::CheckedAdd;
+	use sp_runtime::traits::Bounded;
+	use sp_runtime::traits::CheckedAdd;
+	use sp_runtime::traits::One;
 
 	// - kitty map save
 	// 定义一个kitty u8 16 个字节 dna
@@ -44,24 +45,26 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		// - constant value
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Randomness: Randomness<Self::Hash, Self::BlockNumber>;  
-        type Currency: ReservableCurrency<Self::AccountId>+ Currency<Self::AccountId> + LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-        
-		// runtime 设置 	
-		type KittyIndex: Parameter
-        + Member
-        + AtLeast32BitUnsigned
-        + Bounded
-        + One
-        + Default
-        + Copy
-        + MaybeSerializeDeserialize
-        + MaxEncodedLen;
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+		type Currency: ReservableCurrency<Self::AccountId>
+			+ Currency<Self::AccountId>
+			+ LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 
-		// runtime 设置 
-        #[pallet::constant]
-        type MinLock: Get<BalanceOf<Self>>;
-		//最大值 
+		// runtime 设置
+		type KittyIndex: Parameter
+			+ Member
+			+ AtLeast32BitUnsigned
+			+ Bounded
+			+ One
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen;
+
+		// runtime 设置
+		#[pallet::constant]
+		type MinLock: Get<BalanceOf<Self>>;
+		//最大值
 		//#[pallet::constant]
 		//type MaxKittyIndex:Get<u32>;
 	}
@@ -72,13 +75,14 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn next_kitty_id)]
-	pub type NextKittyId<T:Config> = StorageValue<_, T::KittyIndex, ValueQuery, GetDefaultValue<T>>;
-	// ValueQuey 存储 默认值0 
+	pub type NextKittyId<T: Config> =
+		StorageValue<_, T::KittyIndex, ValueQuery, GetDefaultValue<T>>;
+	// ValueQuey 存储 默认值0
 
 	#[pallet::storage]
 	#[pallet::getter(fn kittes)]
-	pub type Kitties<T:Config> = StorageMap<_, Blake2_128Concat,T::KittyIndex, Kitty>;
-	// storageMap 存储 index-》kitty 
+	pub type Kitties<T: Config> = StorageMap<_, Blake2_128Concat, T::KittyIndex, Kitty>;
+	// storageMap 存储 index-》kitty
 
 	#[pallet::storage]
 	#[pallet::getter(fn kitty_owner)]
@@ -91,33 +95,34 @@ pub mod pallet {
 	// _,
 	// Blake2_128Concat,
 	// T::AccountId,
-	// BoundedVec<T::KittyIndex,T::MaxKittyIndex>,//check max value ,BoundedVec 
-	// ValueQuery,	
+	// BoundedVec<T::KittyIndex,T::MaxKittyIndex>,//check max value ,BoundedVec
+	// ValueQuery,
 	// >;
 
 	//账户类型引用balance 模块
-    pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-    
-	pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance; 
-    
-	
+	pub type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-	 //type KittyIndex = u32;
-	// 默认值 kitty index 
+	pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<
+		<T as frame_system::Config>::AccountId,
+	>>::NegativeImbalance;
+
+	//type KittyIndex = u32;
+	// 默认值 kitty index
 	#[pallet::type_value]
-	pub fn GetDefaultValue<T:Config>() ->T::KittyIndex{
-		0_u32.into()  
+	pub fn GetDefaultValue<T: Config>() -> T::KittyIndex {
+		0_u32.into()
 	}
-    
-    // - defined Event
+
+	// - defined Event
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		KittyCreated(T::AccountId, T::KittyIndex, Kitty), 
+		KittyCreated(T::AccountId, T::KittyIndex, Kitty),
 		KittyBreed(T::AccountId, T::KittyIndex),
-		KittyTransfer(T::AccountId, T::AccountId,T::KittyIndex),
-        SellKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
-        BuyKitty(T::AccountId,T::AccountId,BalanceOf<T>,T::KittyIndex),
+		KittyTransfer(T::AccountId, T::AccountId, T::KittyIndex),
+		SellKitty(T::AccountId, T::AccountId, BalanceOf<T>, T::KittyIndex),
+		BuyKitty(T::AccountId, T::AccountId, BalanceOf<T>, T::KittyIndex),
 	}
 
 	#[pallet::error]
@@ -127,8 +132,9 @@ pub mod pallet {
 		NotKittyOwner,
 		InvaidKittyId,
 		SameKittyId,
-        KittyIndexOverFlow,
-        MoneyNotEnough, 
+		KittyIndexOverFlow,
+		MoneyNotEnough,
+		SameAccount,
 	}
 
 	#[pallet::hooks]
@@ -137,16 +143,16 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_00)]
-		pub fn create(origin: OriginFor<T>,) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let kitty_id = Self::get_next_id().map_err(|_| Error::<T>::KittyIndexOverFlow)?;
 			let dna = Self::random_value(&who);
-			let kitty = Kitty(dna); 
-            //锁定钱
-            T::Currency::reserve(&who,T::MinLock::get())
-				.map_err(|_|Error::<T>::MoneyNotEnough)?;
-            Self::storage_kitty(kitty_id, &kitty, &who);
-            Self::set_next_id(kitty_id)?; 
+			let kitty = Kitty(dna);
+			//锁定钱
+			T::Currency::reserve(&who, T::MinLock::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
+			Self::storage_kitty(kitty_id, &kitty, &who);
+			Self::set_next_id(kitty_id)?;
 			Self::deposit_event(Event::KittyCreated(who, kitty_id, kitty));
 			Ok(())
 		}
@@ -170,75 +176,90 @@ pub mod pallet {
 
 			let mut data = [0u8; 16];
 			for i in 0..kitty_1.0.len() {
-                // choose kitty2 and 1 choose kitty1
-				data[i] = (kitty_1.0[i] & selecter[i] ) | (kitty_2.0[i] & !selecter[i]);
+				// choose kitty2 and 1 choose kitty1
+				data[i] = (kitty_1.0[i] & selecter[i]) | (kitty_2.0[i] & !selecter[i]);
 			}
 
 			let new_kitty = Kitty(data);
 
 			Self::storage_kitty(kitty_id, &new_kitty, &who);
-            Self::set_next_id(kitty_id)?; 
+			Self::set_next_id(kitty_id)?;
 			Self::deposit_event(Event::KittyBreed(who, kitty_id));
 			// check kitty id -2
 
 			Ok(())
 		}
 
-        #[pallet::weight(10_000)]
-        pub fn transfer(origin:OriginFor<T>, kitty_id: T::KittyIndex, new_owner:T::AccountId)->DispatchResult{
-            let  sender = Self::before_transfer_check_owner(origin,kitty_id)?;
-            KittyOwner::<T>::insert(kitty_id,&new_owner);
-            //质押 
-            T::Currency::reserve(&new_owner,T::MinLock::get())?;
-            let _sender_balance = T::Currency::unreserve(&sender,T::MinLock::get());
-            
-            //log::info!("释放质押后balan {:?}",sender_balance);
-            Self::deposit_event(Event::KittyTransfer(sender,new_owner,kitty_id));
-            Ok(())
-        }
-         
-        #[pallet::weight(10_000)]
-        pub fn sell(origin:OriginFor<T>,kitty_id: T::KittyIndex,buyer:T::AccountId,price:BalanceOf<T> )->DispatchResult{
-             let who = ensure_signed(origin.clone())?;
-            //校验钱包 
-            let total = price + T::MinLock::get();
-            ensure!(T::Currency::can_slash(&who,total),Error::<T>::MoneyNotEnough);
-            //扣押钱包
-            T::Currency::transfer(&buyer,&who,price,ExistenceRequirement::KeepAlive)?;
-            //转移
-            Self::transfer(origin,kitty_id,buyer.clone())?; 
-            Self::deposit_event(Event::SellKitty(buyer,who,price,kitty_id)); 
-            Ok(())
-        }
+		#[pallet::weight(10_000)]
+		pub fn transfer(
+			origin: OriginFor<T>,
+			kitty_id: T::KittyIndex,
+			new_owner: T::AccountId,
+		) -> DispatchResult {
+			let sender = Self::before_transfer_check_owner(origin, kitty_id)?;
+			ensure!(sender != new_owner, Error::<T>::SameAccount);
 
-        #[pallet::weight(10_000)]
-        pub fn buy(origin:OriginFor<T>,kitty_id: T::KittyIndex,owner:T::AccountId,price:BalanceOf<T> )->DispatchResult{
-            let who = ensure_signed(origin.clone())?;
-           //校验钱包 
-           let total = price + T::MinLock::get();
-           ensure!(T::Currency::can_slash(&who,total),Error::<T>::MoneyNotEnough);
-           //扣押钱包
-           T::Currency::transfer(&who,&who,price,ExistenceRequirement::KeepAlive)?;
-           //转移
-		   
-           //Self::transfer(owner,kitty_id,who.clone())?; 
-		 
-		   KittyOwner::<T>::insert(kitty_id,&who);
-		   //质押 
-		   T::Currency::reserve(&who,T::MinLock::get())?;
-		   let sender_balance = T::Currency::unreserve(&owner,T::MinLock::get());
-		   
-		   log::info!("释放质押后balan {:?}",sender_balance);
-		   Self::deposit_event(Event::KittyTransfer(who.clone(),owner.clone(),kitty_id));
-			
-           Self::deposit_event(Event::BuyKitty(who,owner,price,kitty_id)); 
-           Ok(())
-       }
-         
+			T::Currency::reserve(&new_owner, T::MinLock::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
+			let _sender_balance = T::Currency::unreserve(&sender, T::MinLock::get());
+			KittyOwner::<T>::insert(kitty_id, &new_owner);
+			//质押
+			//log::info!("释放质押后balan {:?}",sender_balance);
+			Self::deposit_event(Event::KittyTransfer(sender, new_owner, kitty_id));
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn sell(
+			origin: OriginFor<T>,
+			kitty_id: T::KittyIndex,
+			buyer: T::AccountId,
+			price: BalanceOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin.clone())?;
+			ensure!(Self::kitty_owner(kitty_id) == Some(who.clone()), Error::<T>::NotKittyOwner);
+			//校验钱包
+			let total = price + T::MinLock::get();
+			ensure!(T::Currency::can_slash(&buyer, total), Error::<T>::MoneyNotEnough);
+			//扣押钱包
+			T::Currency::transfer(&buyer, &who, price, ExistenceRequirement::KeepAlive)?;
+			//转移
+			Self::transfer(origin, kitty_id, buyer.clone())?;
+			Self::deposit_event(Event::SellKitty(buyer, who, price, kitty_id));
+			Ok(())
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn buy(
+			origin: OriginFor<T>,
+			kitty_id: T::KittyIndex,
+			owner: T::AccountId,
+			price: BalanceOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin.clone())?;
+
+			ensure!(Self::kitty_owner(kitty_id) == Some(owner.clone()), Error::<T>::NotKittyOwner);
+			let total = price + T::MinLock::get();
+			ensure!(T::Currency::can_slash(&who, total), Error::<T>::MoneyNotEnough);
+			//扣押钱包
+			T::Currency::transfer(&who, &owner, price, ExistenceRequirement::KeepAlive)?;
+			//转移
+			//质押
+			//Self::transfer(owner,kitty_id,who.clone())?;
+			T::Currency::reserve(&who, T::MinLock::get())?;
+			KittyOwner::<T>::insert(kitty_id, &who);
+			let sender_balance = T::Currency::unreserve(&owner, T::MinLock::get());
+
+			log::info!("释放质押后balan {:?}", sender_balance);
+			Self::deposit_event(Event::KittyTransfer(who.clone(), owner.clone(), kitty_id));
+
+			Self::deposit_event(Event::BuyKitty(who, owner, price, kitty_id));
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		// 輔助函數 
+		// 輔助函數
 		// get a random 256
 		fn random_value(sender: &T::AccountId) -> [u8; 16] {
 			let palyload = (
@@ -252,10 +273,10 @@ pub mod pallet {
 		// get next id
 		fn get_next_id() -> Result<T::KittyIndex, Error<T>> {
 			match Self::next_kitty_id() {
-                val => {
-                    ensure!(val!=T::KittyIndex::max_value(), Error::<T>::KittyIndexOverFlow);
-                    Ok(val)
-                }, 
+				val => {
+					ensure!(val != T::KittyIndex::max_value(), Error::<T>::KittyIndexOverFlow);
+					Ok(val)
+				},
 			}
 		}
 
@@ -268,33 +289,32 @@ pub mod pallet {
 		}
 
 		// new  kitty storage
-		fn storage_kitty(kitty_id: T::KittyIndex, kitty: &Kitty, who: & T::AccountId) {
+		fn storage_kitty(kitty_id: T::KittyIndex, kitty: &Kitty, who: &T::AccountId) {
 			Kitties::<T>::insert(kitty_id, kitty);
-			KittyOwner::<T>::insert(kitty_id, who); 
+			KittyOwner::<T>::insert(kitty_id, who);
 		}
 
-        pub(crate) fn set_next_id(kitty_id: T::KittyIndex)->Result<(),DispatchError >{
+		pub(crate) fn set_next_id(kitty_id: T::KittyIndex) -> Result<(), DispatchError> {
+			let id = T::KittyIndex::one();
+			let next_id = kitty_id.checked_add(&id).ok_or(Error::<T>::KittyIndexOverFlow)?;
+			NextKittyId::<T>::set(next_id);
+			Ok(())
+		}
 
-            let id = T::KittyIndex::one();
-            let next_id = kitty_id.checked_add(&id).ok_or(
-                Error::<T>::KittyIndexOverFlow
-            )?;
-            NextKittyId::<T>::set(next_id);
-            Ok(())
-        }
+		// 交易 转移检查
+		fn before_transfer_check_owner(
+			origin: OriginFor<T>,
+			kitty_id: T::KittyIndex,
+		) -> Result<T::AccountId, DispatchError> {
+			let who = ensure_signed(origin)?;
+			Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
+			ensure!(Self::kitty_owner(kitty_id) == Some(who.clone()), Error::<T>::NotKittyOwner);
+			Ok(who)
+		}
 
-        // 交易 转移检查
-        fn before_transfer_check_owner(origin:OriginFor<T>, kitty_id: T::KittyIndex)->Result<T::AccountId,DispatchError>{
-            let who = ensure_signed(origin)?;
-            Self::get_kitty(kitty_id).map_err(|_| Error::<T>::InvaidKittyId)?;
-            ensure!(Self::kitty_owner(kitty_id)==Some(who.clone()),Error::<T>::NotKittyOwner);
-            Ok(who)
-        }
-
-        //  sava all kitties
+		//  sava all kitties
 		// fn _set_all_kitties(){
 		// 	//Allkitties::<T>::insert(uid, )
 		// }
-         
 	}
 }

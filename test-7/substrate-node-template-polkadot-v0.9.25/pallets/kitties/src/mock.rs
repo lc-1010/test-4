@@ -1,7 +1,10 @@
 use crate as pallet_kitties;
-use frame_support::{traits::{ConstU16, ConstU32, ConstU64, ConstU128}, parameter_types};
+use frame_support::{
+	parameter_types,
+	traits::{ConstU128, ConstU16, ConstU32, ConstU64},
+};
+use frame_system as system; // 别名
 use sp_core::H256;
-use frame_system as system;// 别名
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -26,7 +29,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		//随机dna
 		Randomness: pallet_randomness_collective_flip::{Pallet, Storage},
-		 
+
 
 	}
 );
@@ -89,7 +92,7 @@ impl pallet_kitties::Config for Test {
 	// 账户
 	type Currency = Balances;
 	// 配置
-	type MinLock=MinLock;
+	type MinLock = MinLock;
 }
 
 // 宏
@@ -104,20 +107,16 @@ impl pallet_kitties::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-		 
-
 	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
-	pallet_balances::GenesisConfig::<Test>
-	{
-		balances: vec![(1, 100_000_000_000), (2, 100_000_000_000), (3, 9999), (4, 20_000),],
+	pallet_balances::GenesisConfig::<Test> {
+		balances: vec![(1, 100_000_000_000), (2, 100_000_000_000), (3, 9999), (4, 20_000)],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
-	 
-	
+
 	let mut ext = sp_io::TestExternalities::new(t);
-	ext.execute_with(|| System::set_block_number(1));//设置起始区块的高度
-	
+	ext.execute_with(|| System::set_block_number(1)); //设置起始区块的高度
+
 	ext
 }
