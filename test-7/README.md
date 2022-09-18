@@ -9,6 +9,7 @@
   - [4 kitty lib 单元测试](#4-kitty-lib-单元测试)
     - [完成ERROR 测试 18项目](#完成error-测试-18项目)
       - [cargo clippy](#cargo-clippy)
+    - [回滚问题 现在已经默认又了 不用特别加宏](#回滚问题-现在已经默认又了-不用特别加宏)
   - [kitty 前端页面 暂时不会�‍♂️�](#kitty-前端页面-暂时不会️)
       - [todo](#todo)
     - [web](#web)
@@ -196,6 +197,12 @@ help: consider using `let` statement
 warning: `pallet-kitties` (lib) generated 2 warnings
     Finished dev [unoptimized + debuginfo] target(s) in 2.03s
 ```
+### 回滚问题 现在已经默认又了 不用特别加宏
+#[transactional]
+
+use of deprecated macro `transactional`: This is now the default behaviour for all extrinsics.
+`#[warn(deprecated)]` on by default
+
 
 ## kitty 前端页面 暂时不会�‍♂️�
  yarn cache clean --all
