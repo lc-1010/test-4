@@ -9,9 +9,10 @@
   - [4 kitty lib 单元测试](#4-kitty-lib-单元测试)
     - [完成ERROR 测试 18项目](#完成error-测试-18项目)
       - [cargo clippy](#cargo-clippy)
-  - [kitty 前端页面](#kitty-前端页面)
+  - [kitty 前端页面 暂时不会�‍♂️�](#kitty-前端页面-暂时不会️)
       - [todo](#todo)
     - [web](#web)
+    - [](#)
  
 
 ---- 
@@ -196,10 +197,14 @@ warning: `pallet-kitties` (lib) generated 2 warnings
     Finished dev [unoptimized + debuginfo] target(s) in 2.03s
 ```
 
-## kitty 前端页面
+## kitty 前端页面 暂时不会�‍♂️�
+ yarn cache clean --all
+YARN_CHECKSUM_BEHAVIOR=update yarn
+
 #### todo
 - [ ] 创建
 - [ ] 展示，属于谁
 - [ ] 转让 
 
-###  [web](./front-web/)
+###  [web](./front-web/) 
+### 

@@ -67,6 +67,11 @@ pub mod pallet {
 		//最大值
 		//#[pallet::constant]
 		//type MaxKittyIndex:Get<u32>;
+
+		// #[pallet::storage]
+		// #[pallet::getter(fn kitties_count)]
+		// pub type KittiesCount<T: Config> = StorageValue<_, T::KittyIndex>;
+		
 	}
 
 	#[pallet::pallet]
@@ -139,7 +144,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-
+	
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_00)]
