@@ -43,9 +43,13 @@ use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-
+/// 引入本地项目
+/// 小猫
 pub use pallet_kitties;
+/// 存证
 pub use pallet_poe;
+/// offchain 链下
+pub use pallet_offchain_worker;
 /// Import the template pallet.
 pub use pallet_template;
 /// An index to a block.
@@ -274,6 +278,11 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
+/// 本地模块
+impl pallet_offchain_worker::Config for Runtime{
+	type Event = Event;
+}
+
 impl pallet_poe::Config for Runtime {
 	type Event = Event;
 	type MaxClinetLenght = ConstU32<512>;
@@ -308,6 +317,7 @@ construct_runtime!(
 		TemplateModule: pallet_template,
 		PoeModule: pallet_poe,
 		KittiesModule: pallet_kitties,
+		OffChainWorkerModule: pallet_offchain_worker,
 	}
 
 );
