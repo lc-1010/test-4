@@ -8,6 +8,47 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+//提交签证===》
+use sp_core::crypto::KeyTypeId;
+pub const KYE_TYPE: KeyTypeId = KeyTypeId(*b"ocwd");
+
+pub mod crypto {
+    use super::KYE_TYPE;
+    use sp_core::sr255199::Signatrue as Sr25519Signature;
+
+    use sp_runtime::{
+        app_crypto::{ app_crypto, sr255199},
+        traits::Verify,
+        MultiSignature, MultiSigner,
+    };
+    app_crypto!(sr255199, KYE_TYPE);
+    pub struct OcwAuthId;
+
+    impl frame_system:::offchain::AppCrypto<MutiSigner, MultiSignature> for OcwAuthId{
+        type RuntimeAppPublic = Public;
+        type GenericSignature = sp_core::sr255199::Signatrue;
+        type GenericPublic = sp_core::sr255199::Public;
+    }
+
+    impl frame_system::offchain::AppCrypto< <Src255199Signature as Verify>::Signer,Sr25519Signature>
+    for OcwAuthId
+    {
+        type RuntimeAppPublic = Public;
+        type GenericSignature = sp_core::sr255199::Signature;
+        type GenericPublic = sp_core::sr255199::Public;
+    }
+}
+//《===提交签证
+
+
+use frame_system::offchain::{
+    SubmitTransaction,
+};
+
+use sp_runtime::{
+        transaction_validity::{InvalidTransaction,TransactionValidity, ValidTransaction},
+};
+
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -26,6 +67,9 @@ use frame_support::{pallet_prelude::*, Deserialize};
     };
     use frame_support::inherent::Vec;
     use serde::{ Deserializer};
+
+    use sp_std::vec::Vec;
+    use sp_std::vec;
 
 
     #[derive(Deserialize,Encode,Decode)]
@@ -58,6 +102,8 @@ use frame_support::{pallet_prelude::*, Deserialize};
             )
         }
     }
+    //------crypto
+
 
 
 	#[pallet::pallet]
@@ -129,6 +175,10 @@ use frame_support::{pallet_prelude::*, Deserialize};
             }else{
                 log::info!("Error while fetch github info!");
             }
+
+            let payload = vec![1,2,3,4,5,6,7,8];
+            _ = Self::send_signed_tx(payload);
+
 			log::info!("Leave from offchain workers!: {:?} ♦️ ", block_number);
 		}
 		// on_initailz
@@ -145,6 +195,8 @@ use frame_support::{pallet_prelude::*, Deserialize};
 			log::info!("♦️ in on_idle!,这是第:{:?}", n);
 			0
 		}
+
+
 	}
 
     impl<T:Config> Pallet<T>{
@@ -229,6 +281,56 @@ use frame_support::{pallet_prelude::*, Deserialize};
             let gh_info:GithubInfo = serde_json::from_str(body_str).map_err(|_|http::Error::Unknow)?;
 
             Ok(gh_info)
+        }
+
+        fn send_signed_tx(palyload: Vec<u8>)->Result<(),&'static str>{
+            let signer = Signer::<T, T::AuthoityId>::all_acount();
+            if !signer.can_sign(){
+                return Err(
+                        "No local accounts avilabe. Consider adding one via `author_insertKey` RPC",
+                )
+            }
+
+            let results = signer.send_signed_transaction(|_account|{
+                Call::submit_data{ palyload: palyload.clone()}
+            });
+
+            for (acc,res) in &reulst {
+                match res{
+                    Ok(()) =>log::info!("[{:?}] submitted data: {:?},", acc.id, payload),
+                    Err(e) =>log::error!("[{:?}] Failed to submit transaction: {:?}",acc.id, e),
+                }
+            }
+            Ok(())
+        }
+
+        fn transaction(bolck_number: T::BlockNumber){
+            let val:u64 =43;
+            let call = Call::subimt_data_unsiigned{n:value};
+
+            _= SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+                .map_err(|_|{
+                    log::error!("Failed in offchain_unsigned_tx");
+                });
+            log::info!("Leave offchain worers!:{:?}", bolck_number);
+        }
+    }
+
+    #[pallet::validata_unsigned]
+    impl<T:Config>ValidteUnsigned for Pallet<T>{
+        type Call = Call<T>;
+
+        fn validate_unsigned(_soure: TransactionSource, call:&Self::Call)-> TranscationValidity{
+            if let Call::submit_data_unsigned{ n:_} =call {
+                ValidTransaction::with_tag_perfix("MyOffchainWorker")
+                    .priority(10000)
+                    .and_provides(1)
+                    .longevity(3)
+                    .proagate(true)
+                    .build()
+            }else{
+                InvlidTransaction::Call.into()
+            }
         }
     }
 }
