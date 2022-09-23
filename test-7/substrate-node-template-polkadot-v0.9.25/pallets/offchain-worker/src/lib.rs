@@ -11,14 +11,14 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-	
+
 
 use frame_support::{pallet_prelude::*, Deserialize};
 	use frame_system::pallet_prelude::*;
-    //import 
+    //import
 	use frame_support::pallet_prelude::Hooks;
     use sp_runtime::traits::Zero;
-    use sp_runtime::offchain::storage::{StorageValueRef, StorageRetrievalError, MutateStorageError}; 
+    use sp_runtime::offchain::storage::{StorageValueRef, StorageRetrievalError, MutateStorageError};
     use sp_runtime::{
         offchain::{
             http,Duration,
@@ -27,7 +27,7 @@ use frame_support::{pallet_prelude::*, Deserialize};
     use frame_support::inherent::Vec;
     use serde::{ Deserializer};
 
-   
+
     #[derive(Deserialize,Encode,Decode)]
     struct GithubInfo{
         #[serde(deserialize_with = "de_string_to_bytes")]
@@ -37,15 +37,27 @@ use frame_support::{pallet_prelude::*, Deserialize};
         public_repos: u32,
     }
 
-    pub fn de_string_to_bytes<'de,D>(de:D)->Result<Vec<u8>,D::Error> 
+    pub fn de_string_to_bytes<'de,D>(de:D)->Result<Vec<u8>,D::Error>
     where
     D: Deserializer<'de>,
     {
         let s:&str = Deserialize::deserialize(de)?;
         Ok(s.as_bytes().to_vec())
-        
+
     }
 
+    use core::{conver::IryInto,fmt};
+    impl fmt::Debug for GithubInfo{
+        fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "{{ login:{}, blog:{}, public_repos:{} }}",
+                sp_std::str::from_utf8(&self.login).map_err(|_| fmt::Error)?,
+                sp_std::str::from_utf8(&self.blog).map_err(|_|fmt::Error)?,
+                &self.public_repos
+            )
+        }
+    }
 
 
 	#[pallet::pallet]
@@ -111,8 +123,12 @@ use frame_support::{pallet_prelude::*, Deserialize};
 
             //read and write
             Self::reads_writes(block_number);
-            // read github 
-            Self::read_github();
+            // read github
+            if let Ok(info) = Self::read_github(){
+                log::info!("Github Info :{:?}", info);
+            }else{
+                log::info!("Error while fetch github info!");
+            }
 			log::info!("Leave from offchain workers!: {:?} ♦️ ", block_number);
 		}
 		// on_initailz
@@ -147,7 +163,7 @@ use frame_support::{pallet_prelude::*, Deserialize};
             if block_number % 2u32.into() != Zero::zero(){
                 //odd
                 let key = Self::derive_key(block_number);
-                // 模板方法 
+                // 模板方法
                 let val_ref = StorageValueRef::persistent(&key);
 
                 let random_slice = sp_io::offchain::random_seed();
@@ -178,7 +194,7 @@ use frame_support::{pallet_prelude::*, Deserialize};
                 //even
                 let key = Self::derive_key(block_number-1u32.into());
                 let mut val_ref = StorageValueRef::persistent(&key);
-                 
+
                 if let Ok(Some(value)) = val_ref.get::<([u8;32],u64)>(){
                     log::info!("🥳==>in even block, value read:{:?}", value);
                     val_ref.clear();
@@ -186,7 +202,7 @@ use frame_support::{pallet_prelude::*, Deserialize};
 
             }
         }
-        
+
         fn read_github()->Result<GithubInfo,http::Error>{
             log::info!("====>start read github");
             let dealline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
@@ -197,8 +213,22 @@ use frame_support::{pallet_prelude::*, Deserialize};
             .send().map_err(|_|http::Error::IoError)?;
 
             let response = pending.try_wait(deadline).map_err(|_|{
+                http:Error::DeadlineReached
+            })??;
 
-            });
+            if response.code != 200 {
+                log::warn!("Unexpected status code:{}", response.code);
+                return Err(http::Error::Unknow);
+            }
+            let body = response.body().collect::<Vec<u8>>();
+            let body_str = sp_std::str::from_utf8(&body).map_err(|_|{
+                log::warn!("No utf8 body");
+                http::Error::Unkow
+            })?;
+
+            let gh_info:GithubInfo = serde_json::from_str(body_str).map_err(|_|http::Error::Unknow)?;
+
+            Ok(gh_info)
         }
     }
 }
