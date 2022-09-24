@@ -16,13 +16,13 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
+	ApplyExtrinsicResult, MultiSignature,SaturatedConversion,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
+use codec::Encode;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -50,6 +50,7 @@ pub use pallet_kitties;
 pub use pallet_poe;
 /// offchain 链下
 pub use pallet_offchain_worker;
+pub use pallet_offchain_indexing;
 /// Import the template pallet.
 pub use pallet_template;
 /// An index to a block.
@@ -279,6 +280,12 @@ impl pallet_offchain_worker::Config for Runtime{
 	type AuthorityId = pallet_offchain_worker::crypto::OcwAuthId;
 	type Call = Call;
 }
+
+impl pallet_offchain_indexing::Config for Runtime{
+	type Event = Event;
+	type AuthorityId = pallet_offchain_worker::crypto::OcwAuthId;
+	type Call = Call;
+}
 // Give you pallet the ability to make transactions
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
@@ -297,6 +304,7 @@ where
 			.saturating_sub(1);
 		let tip = 0;
 		let extra: SignedExtra = (
+			frame_system::CheckNonZeroSender::<Runtime>::new(),
 			frame_system::CheckSpecVersion::<Runtime>::new(),
 			frame_system::CheckTxVersion::<Runtime>::new(),
 			frame_system::CheckGenesis::<Runtime>::new(),
@@ -372,6 +380,7 @@ construct_runtime!(
 		PoeModule: pallet_poe,
 		KittiesModule: pallet_kitties,
 		OffChainWorkerModule: pallet_offchain_worker,
+		OffChainIndexingModule: pallet_offchain_indexing,
 	}
 
 );

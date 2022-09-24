@@ -43,13 +43,14 @@ pub mod crypto {
 
 
 // use sp_runtime::{
-//     transaction_validity::{InvalidTransaction,TransactionValidity, ValidTransaction}, {  http,Duration, },
+//     transaction_validity::{InvalidTransaction,TransactionValidity, ValidTransaction},
+//      {  http,Duration, },
 // }; 
 
  
 #[frame_support::pallet]
 pub mod pallet {
-
+    //use supper::*; //引入外部
     use frame_system::offchain::{
         Signer,
          CreateSignedTransaction, SendSignedTransaction, 
@@ -323,8 +324,8 @@ pub mod pallet {
             // vec 多个 
             for (acc,res) in &results {
                 match res{
-                    Ok(()) =>log::info!("[{:?}] submitted data: {:?},", acc.id, payload),
-                    Err(e) =>log::error!("[{:?}] Failed to submit transaction: {:?}",acc.id, e),
+                    Ok(()) =>log::info!("😇 成功提交[{:?}] submitted data: {:?},", acc.id, payload),
+                    Err(e) =>log::error!("�� 失败啦 [{:?}] Failed to submit transaction: {:?}",acc.id, e),
                 }
             }
             Ok(())

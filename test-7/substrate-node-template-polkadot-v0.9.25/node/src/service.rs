@@ -87,9 +87,9 @@ pub fn new_partial(
 			executor,
 		)?;
 	let client = Arc::new(client);
+	let keystore = keystore_container.sync_keystore();
 
 	if config.offchain_worker.enabled {
-		let keystore = keystore_container.sync_keystore();
 		sp_keystore::SyncCryptoStore::sr25519_generate_new(
 			&*keystore,
 			node_template_runtime::pallet_offchain_worker::KYE_TYPE,

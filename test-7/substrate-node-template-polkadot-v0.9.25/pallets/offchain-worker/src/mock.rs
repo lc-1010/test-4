@@ -49,8 +49,10 @@ impl system::Config for Test {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_template::Config for Test {
+impl pallet_offchain_worker::Config for Test {
 	type Event = Event;
+	type Call = Call;
+	type AuthorityId = AuthorityId;
 }
 
 // Build genesis storage according to the mock runtime.
