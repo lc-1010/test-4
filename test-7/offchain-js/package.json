@@ -1,0 +1,22 @@
+
+{
+  "name": "js-component",
+  "version": "1.0.0",
+  "descrition": "test connecting substrate get offchain storage",
+  "author": "lc-1010",
+  "license": "mit",
+  "private": false,
+  "scripts": {
+    "start": "node --use_strict index.js",
+    "start:dev": "nodemon --use_strict --inspect ",
+    "start:degbu": "nodemon --use_strict --inspect "
+  },
+  "dependencies": {
+    "@polkadot/api": "^9.4.2",
+    "@polkadot/types": "^^9.4.2",
+    "web3": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  }
+}

@@ -91,6 +91,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let key = Self::derive_key(frame_system::Module::<T>::block_number());
 			let data = IndexingData(b"submit_number".to_vec(), number);
+			log::info!("保存的key 前缀 IndexingData key is {:?}",str::from_utf8(&key));
 
 			offchain_index::set(&key, &data.encode());
 			Ok(())
