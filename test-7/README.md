@@ -16,8 +16,9 @@
     - [](#)
   - [4 offchain](#4-offchain)
       - [offchain 组件](#offchain-组件)
-      - [todo](#todo-1)
- 
+    - [offchain实践](#offchain实践)
+      - [Indexing](#indexing)
+      - [localStorageGet](#localstorageget)
 
 ---- 
 
@@ -232,16 +233,18 @@ node 通过api调用链上和链下逻辑
 - 外层node 和rpc 可以直接读链上存储的数据，和offchain Storage 中的数据
 - 外层node 和rpc 可以直接向offchain Storage 中写数据，但不能直接向链上存储写数据，必须通过发生交易更改链上状态
 
+### offchain实践
 
-
-#### todo
+#### Indexing
 - [x] 1.在 Offchain Worker 中，使用 Offchain Indexing 特性实现从链上向 Offchain Storage 中写入数据
 
 - [read IndexingData code ](https://github.com/lc-1010/test-4/blob/main/test-7/substrate-node-template-polkadot-v0.9.25/pallets/offchain-indexing/src/lib.rs#L121)
    - ![img](./offchain-img/local-data.png)
-
+  
+#### localStorageGet
 - [x] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据  
-   - 简单通过  `api.rpc.offchain.localStorageGet` 函数调用获取数据,然后将btye 数据转为 字符串，比较麻烦 ��
+   - 简单通过  `api.rpc.offchain.localStorageGet` 函数调用获取数据,然后将btye 数据转为 字符串，比较麻烦 �
+   - [api.rpc.offchain.localStorageGet](https://github.com/lc-1010/test-4/blob/main/test-7/offchain-js/main.ts#L19)
      - ![img](./offchain-img/js-api-rpc-value.png)
   
 - [x] 3.回答链上随机数（如前面Kitties示例中）与链下随机数的区别
