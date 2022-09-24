@@ -236,8 +236,10 @@ node 通过api调用链上和链下逻辑
 
 #### todo
 - [x] 1.在 Offchain Worker 中，使用 Offchain Indexing 特性实现从链上向 Offchain Storage 中写入数据
-- ![img](./offchain-img/local-data.png)
- 
+
+- [read IndexingData code ](https://github.com/lc-1010/test-4/blob/main/test-7/substrate-node-template-polkadot-v0.9.25/pallets/offchain-indexing/src/lib.rs#L121)
+   - ![img](./offchain-img/local-data.png)
+
 - [ ] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据 doing...
   
 - [x] 3.回答链上随机数（如前面Kitties示例中）与链下随机数的区别
