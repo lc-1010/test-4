@@ -10,67 +10,65 @@ mod tests;
 
 //提交签证===》
 use sp_core::crypto::KeyTypeId;
+// 4个字符
 pub const KYE_TYPE: KeyTypeId = KeyTypeId(*b"ocwd");
 
 pub mod crypto {
-    use super::KYE_TYPE;
-    use sp_core::sr255199::Signatrue as Sr25519Signature;
+    use super::KYE_TYPE; 
+	use sp_core::sr25519::Signature as Sr25519Signature;
 
     use sp_runtime::{
-        app_crypto::{ app_crypto, sr255199},
+        app_crypto::{ app_crypto, sr25519},
         traits::Verify,
         MultiSignature, MultiSigner,
     };
-    app_crypto!(sr255199, KYE_TYPE);
+    app_crypto!(sr25519, KYE_TYPE);
     pub struct OcwAuthId;
 
-    impl frame_system:::offchain::AppCrypto<MutiSigner, MultiSignature> for OcwAuthId{
+    impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for OcwAuthId {
         type RuntimeAppPublic = Public;
-        type GenericSignature = sp_core::sr255199::Signatrue;
-        type GenericPublic = sp_core::sr255199::Public;
+        type GenericSignature = sp_core::sr25519::Signature;
+        type GenericPublic = sp_core::sr25519::Public;
     }
 
-    impl frame_system::offchain::AppCrypto< <Src255199Signature as Verify>::Signer,Sr25519Signature>
+    impl frame_system::offchain::AppCrypto< <Sr25519Signature as Verify>::Signer,Sr25519Signature>
     for OcwAuthId
     {
         type RuntimeAppPublic = Public;
-        type GenericSignature = sp_core::sr255199::Signature;
-        type GenericPublic = sp_core::sr255199::Public;
+        type GenericSignature = sp_core::sr25519::Signature;
+        type GenericPublic = sp_core::sr25519::Public;
     }
 }
 //《===提交签证
 
 
-use frame_system::offchain::{
-    SubmitTransaction,
-};
+// use sp_runtime::{
+//     transaction_validity::{InvalidTransaction,TransactionValidity, ValidTransaction}, {  http,Duration, },
+// }; 
 
-use sp_runtime::{
-        transaction_validity::{InvalidTransaction,TransactionValidity, ValidTransaction},
-};
-
-
+ 
 #[frame_support::pallet]
 pub mod pallet {
 
-
-use frame_support::{pallet_prelude::*, Deserialize};
-	use frame_system::pallet_prelude::*;
+    use frame_system::offchain::{
+        Signer,
+         CreateSignedTransaction, SendSignedTransaction, 
+        
+    };
+   
+    use frame_support::pallet_prelude::*;
+	 
+    use frame_system::{pallet_prelude::*, ensure_signed};
     //import
 	use frame_support::pallet_prelude::Hooks;
+    use serde::{Deserialize,Deserializer};
+    use sp_runtime::offchain::{http, Duration};
     use sp_runtime::traits::Zero;
     use sp_runtime::offchain::storage::{StorageValueRef, StorageRetrievalError, MutateStorageError};
-    use sp_runtime::{
-        offchain::{
-            http,Duration,
-        },
-    };
-    use frame_support::inherent::Vec;
-    use serde::{ Deserializer};
-
-    use sp_std::vec::Vec;
+       
     use sp_std::vec;
-
+    use sp_std::vec::Vec;
+    // 编码 
 
     #[derive(Deserialize,Encode,Decode)]
     struct GithubInfo{
@@ -90,7 +88,14 @@ use frame_support::{pallet_prelude::*, Deserialize};
 
     }
 
-    use core::{conver::IryInto,fmt};
+    /*  注释掉后会使用原始 【Debug】打印 原始 vec 数据
+    { login: [115, 117, 98, 115, 116, 114, 97, 116, 101, 45
+        , 100, 101, 118, 101, 108, 111, 112, 101, 114, 45, 104, 117, 98], 
+        blog: [104, 116, 116, 112, 115, 58, 47,
+         47, 119, 119, 119, 46, 115, 117, 98, 115, 116, 114,
+          97, 116, 101, 46, 105, 111, 47], public_repos: 37 }
+    */
+    use core::{convert::TryInto,fmt};
     impl fmt::Debug for GithubInfo{
         fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
             write!(
@@ -111,8 +116,15 @@ use frame_support::{pallet_prelude::*, Deserialize};
 	pub struct Pallet<T>(_);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config:CreateSignedTransaction<Call<Self>> +frame_system::Config {
+        /// The identifier type for an offchain worker.
+		type AuthorityId: frame_system::offchain::AppCrypto<Self::Public,Self::Signature> ;
+
+		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// The overarching dispatch call type.
+		type Call: From<Call<Self>>;
 	}
 
 	#[pallet::storage]
@@ -153,6 +165,13 @@ use frame_support::{pallet_prelude::*, Deserialize};
 				},
 			}
 		}
+        // call Dispatch 过来调用
+        #[pallet::weight(0)]
+        pub fn submit_data(origin: OriginFor<T>,payload:Vec<u8>)->DispatchResultWithPostInfo {
+            let _who = ensure_signed(origin)?;
+            log::info!(" 🥰====>in submit_data call {:?}", payload);
+            Ok(().into())
+        }
 	}
 
 	#[pallet::hooks]
@@ -163,13 +182,15 @@ use frame_support::{pallet_prelude::*, Deserialize};
 				block_number
 			);
 
-			let timeout =
-				sp_io::offchain::timestamp().add(sp_runtime::offchain::Duration::from_millis(1000));
+			let timeout = sp_io::offchain::timestamp()
+                    .add(sp_runtime::offchain::Duration::from_millis(3));
 			sp_io::offchain::sleep_until(timeout);
 
             //read and write
             Self::reads_writes(block_number);
+            
             // read github
+
             if let Ok(info) = Self::read_github(){
                 log::info!("Github Info :{:?}", info);
             }else{
@@ -199,6 +220,7 @@ use frame_support::{pallet_prelude::*, Deserialize};
 
 	}
 
+    // 辅助函数
     impl<T:Config> Pallet<T>{
         #[deny(clippy::clone_double_ref)]
         fn derive_key(block_number: T::BlockNumber)->Vec<u8>{
@@ -257,34 +279,37 @@ use frame_support::{pallet_prelude::*, Deserialize};
 
         fn read_github()->Result<GithubInfo,http::Error>{
             log::info!("====>start read github");
-            let dealline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
+            let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
             let request = http::Request::get("https://api.github.com/orgs/substrate-developer-hub");
             let pending = request
             .add_header("User-Agent", "Substrate-Offchain-Worker")
-            .deadline(dealline)
+            .deadline(deadline)
             .send().map_err(|_|http::Error::IoError)?;
 
-            let response = pending.try_wait(deadline).map_err(|_|{
-                http:Error::DeadlineReached
-            })??;
+            let response = pending
+                    .try_wait(deadline)
+                    .map_err(|_|http::Error::DeadlineReached )??;
 
             if response.code != 200 {
                 log::warn!("Unexpected status code:{}", response.code);
-                return Err(http::Error::Unknow);
+                return Err(http::Error::Unknown)
             }
             let body = response.body().collect::<Vec<u8>>();
             let body_str = sp_std::str::from_utf8(&body).map_err(|_|{
                 log::warn!("No utf8 body");
-                http::Error::Unkow
+                http::Error::Unknown
             })?;
 
-            let gh_info:GithubInfo = serde_json::from_str(body_str).map_err(|_|http::Error::Unknow)?;
+            let gh_info:GithubInfo = serde_json::from_str(body_str)
+            .map_err(|_|http::Error::Unknown)?;
 
             Ok(gh_info)
         }
 
-        fn send_signed_tx(palyload: Vec<u8>)->Result<(),&'static str>{
-            let signer = Signer::<T, T::AuthoityId>::all_acount();
+        fn send_signed_tx(payload: Vec<u8>)->Result<(),&'static str>{
+            // KEYSTORE 中取
+            let signer = Signer::<T, T::AuthorityId>::all_accounts();
+
             if !signer.can_sign(){
                 return Err(
                         "No local accounts avilabe. Consider adding one via `author_insertKey` RPC",
@@ -292,10 +317,11 @@ use frame_support::{pallet_prelude::*, Deserialize};
             }
 
             let results = signer.send_signed_transaction(|_account|{
-                Call::submit_data{ palyload: palyload.clone()}
+                Call::submit_data {payload: payload.clone() }
+                // 内部 枚举 方法名-字段 data 映射 match
             });
-
-            for (acc,res) in &reulst {
+            // vec 多个 
+            for (acc,res) in &results {
                 match res{
                     Ok(()) =>log::info!("[{:?}] submitted data: {:?},", acc.id, payload),
                     Err(e) =>log::error!("[{:?}] Failed to submit transaction: {:?}",acc.id, e),
@@ -304,33 +330,33 @@ use frame_support::{pallet_prelude::*, Deserialize};
             Ok(())
         }
 
-        fn transaction(bolck_number: T::BlockNumber){
-            let val:u64 =43;
-            let call = Call::subimt_data_unsiigned{n:value};
+        // fn transaction(bolck_number: T::BlockNumber){
+        //     let val:u64 =43;
+        //     let call = Call::submit_unsigned_transaction{ n:value};
 
-            _= SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
-                .map_err(|_|{
-                    log::error!("Failed in offchain_unsigned_tx");
-                });
-            log::info!("Leave offchain worers!:{:?}", bolck_number);
-        }
+        //     _= SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+        //         .map_err(|_|{
+        //             log::error!("Failed in offchain_unsigned_tx");
+        //         });
+        //     log::info!("Leave offchain worers!:{:?}", bolck_number);
+        // }
     }
 
-    #[pallet::validata_unsigned]
-    impl<T:Config>ValidteUnsigned for Pallet<T>{
-        type Call = Call<T>;
+    // #[pallet::validate_unsigned]
+    // impl<T:Config>ValidateUnsigned for Pallet<T>{
+    //     type Call = Call<T>;
 
-        fn validate_unsigned(_soure: TransactionSource, call:&Self::Call)-> TranscationValidity{
-            if let Call::submit_data_unsigned{ n:_} =call {
-                ValidTransaction::with_tag_perfix("MyOffchainWorker")
-                    .priority(10000)
-                    .and_provides(1)
-                    .longevity(3)
-                    .proagate(true)
-                    .build()
-            }else{
-                InvlidTransaction::Call.into()
-            }
-        }
-    }
+    //     fn validate_unsigned(_soure: TransactionSource, call:&Self::Call)-> TransactionValidity{
+    //         if let Call::submit_data_unsigned{ n:_} =call {
+    //             ValidTransaction::with_tag_perfix("MyOffchainWorker")
+    //                 .priority(10000)
+    //                 .and_provides(1)
+    //                 .longevity(3)
+    //                 .proagate(true)
+    //                 .build()
+    //         }else{
+    //             InvalidTransaction::Call.into()
+    //         }
+    //     }
+    // }
 }
