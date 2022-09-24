@@ -235,10 +235,24 @@ node 通过api调用链上和链下逻辑
 
 
 #### todo
-- [ ] 1.在 Offchain Worker 中，使用 Offchain Indexing 特性实现从链上向 Offchain Storage 中写入数据
-- [ ] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据
-- [ ] 3.回答链上随机数（如前面Kitties示例中）与链下随机数的区别
+- [x] 1.在 Offchain Worker 中，使用 Offchain Indexing 特性实现从链上向 Offchain Storage 中写入数据
+- ![img](./offchain-img/local-data.png)
+ 
+- [ ] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据 doing...
+  
+- [x] 3.回答链上随机数（如前面Kitties示例中）与链下随机数的区别
+   
+   链上数据中的随机数使用伪随机数，容易被猜测出算法种子，导致不安全的问题。
+   链下随机数相对更安全。
+   https://happypeter.github.io/binfo/chain-random
+   https://learnblockchain.cn/article/1083
+
 - [ ] 4.（可选）在 Offchain Worker 中，解决向链上发起不签名请求时剩下的那个错误。参考：https://github.com/paritytech/substrate/blob/master/frame/examples/offchain-worker/src/lib.rs
-- [ ] 5.（可选）构思一个应用场景，描述如何使用 Offchain Features 三大组件去实现它
+- [x] 5.（可选）构思一个应用场景，描述如何使用 Offchain Features 三大组件去实现它
+  有一个需要大量计算才能得出的结果，但是使用链上数据作为一个重要的参数，并最终写会链上。
+  - 读取链上数据
+  - 链下计算
+  - 链下回写
+  
 - [ ] 6.（可选）如果有时间，可以实现一个上述原型
 
