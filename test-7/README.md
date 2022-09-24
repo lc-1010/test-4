@@ -240,16 +240,20 @@ node 通过api调用链上和链下逻辑
 - [read IndexingData code ](https://github.com/lc-1010/test-4/blob/main/test-7/substrate-node-template-polkadot-v0.9.25/pallets/offchain-indexing/src/lib.rs#L121)
    - ![img](./offchain-img/local-data.png)
 
-- [ ] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据 doing...
+- [x] 2.使用 js sdk 从浏览器 frontend 获取到前面写入 Offchain Storage 的数据  
+   - 简单通过  `api.rpc.offchain.localStorageGet` 函数调用获取数据,然后将btye 数据转为 字符串，比较麻烦 ��
+     - ![img](./offchain-img/js-api-rpc-value.png)
   
 - [x] 3.回答链上随机数（如前面Kitties示例中）与链下随机数的区别
    
    链上数据中的随机数使用伪随机数，容易被猜测出算法种子，导致不安全的问题。
    链下随机数相对更安全。
-   https://happypeter.github.io/binfo/chain-random
-   https://learnblockchain.cn/article/1083
+   - https://happypeter.github.io/binfo/chain-random
+   - https://learnblockchain.cn/article/1083
 
-- [ ] 4.（可选）在 Offchain Worker 中，解决向链上发起不签名请求时剩下的那个错误。参考：https://github.com/paritytech/substrate/blob/master/frame/examples/offchain-worker/src/lib.rs
+- [ ] 4.（可选）在 Offchain Worker 中，解决向链上发起不签名请求时剩下的那个错误。参考：https://github.com/paritytech/substrate/blob/master/frame/examples/offchain-worker/src/lib.rs 
+   - todo 
+  
 - [x] 5.（可选）构思一个应用场景，描述如何使用 Offchain Features 三大组件去实现它
   
   - 有一个需要大量计算，或者是交易，才能得出的结果，但是使用链上数据作为一个重要的参数，并最终写会链上。或者是通过rpc 调用方式将两个数据打通，这样使用链上数据。
