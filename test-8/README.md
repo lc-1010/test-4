@@ -13,3 +13,10 @@
   cargo install cargo-contract --force
  cargo contract --help
 ```
+
+存储 
+
+#[ink(storage)]
+#[ink(constructor)]
+#[ink(message)]
+#[ink(event)]
