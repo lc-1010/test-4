@@ -1,0 +1,120 @@
+name: continuous-intergration/examples
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+        - v*
+    paths-ignore:
+      - 'README.md'
+      - '.gitlab-ci.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/examples.yml'
+
+jobs:
+  check:
+    name: examples
+    strategy:
+      matrix:
+        platform:
+          - macos-latest
+          - windows-latest
+        toolchain:
+          - nightly
+        job:
+          - build
+          - test
+    runs-on: ${{ matrix.platform }}
+    env:
+      UPGRADEABLE_CONTRACTS:    "forward-calls delegate-calls"
+      DELEGATOR_SUBCONTRACTS:   "accumulator adder subber"
+      RUST_BACKTRACE:           full
+    steps:
+
+      - uses: actions/setup-node@v2
+      - run: npm install wasm-opt -g
+
+      - name: Checkout sources & submodules
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@master
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: rust-src
+          override: true
+
+      - name: Install cargo-dylint
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-dylint
+          version: 1
+
+      - name: Install dylint-link
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: dylint-link
+          version: 1
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v1.3.0
+
+      - name: Install `cargo-contract` `master`
+        uses: actions-rs/cargo@v1
+        with:
+            command: install
+            args: --git https://github.com/paritytech/cargo-contract.git
+
+      - name: Output versions
+        run: |
+            wasm-opt --version
+            cargo -vV
+            cargo contract --version
+
+      - name: ${{ matrix.job }} examples on ${{ matrix.platform }}-${{ matrix.toolchain }}
+        if: runner.os == 'Windows'
+        run: |
+           $delegator_subcontracts = "accumulator","adder","subber"
+           foreach ($contract in $delegator_subcontracts) {
+               echo "Processing delegator contract: $contract";
+               cargo contract ${{ matrix.job }} --verbose --manifest-path examples/delegator/${contract}/Cargo.toml;
+           }
+           $upgradeable_contracts = "forward-calls","delegate-calls"
+           foreach ($contract in $upgradeable_contracts) {
+               echo "Processing upgradeable contract: $contract";
+               cargo contract ${{ matrix.job }} --verbose --manifest-path examples/upgradeable-contracts/${contract}/Cargo.toml;
+           }
+           cargo contract ${{ matrix.job }} --verbose --manifest-path examples/upgradeable-contracts/delegate-calls/upgradeable-flipper/Cargo.toml;
+           foreach ($example in Get-ChildItem  -Directory "examples\*") {
+               if ($example -Match 'upgradeable-contracts') { continue }
+               echo "Processing example: $example";
+               cargo contract ${{ matrix.job }} --verbose --manifest-path=$example/Cargo.toml;
+               cargo clean --manifest-path=$example/Cargo.toml;
+           }
+
+      - name: ${{ matrix.job }} examples on ${{ matrix.platform }}-${{ matrix.toolchain }}
+        if: runner.os == 'macOS'
+        run: |
+           for contract in ${DELEGATOR_SUBCONTRACTS}; do
+               echo "Processing delegator contract: $contract";
+               cargo contract ${{ matrix.job }} --verbose --manifest-path examples/delegator/${contract}/Cargo.toml;
+           done
+           for contract in ${UPGRADEABLE_CONTRACTS}; do
+                echo "Processing upgradeable contract: $contract";
+                cargo contract ${{ matrix.job }} --verbose --manifest-path=examples/upgradeable-contracts/$contract/Cargo.toml;
+           done
+           cargo contract ${{ matrix.job }} --verbose --manifest-path=examples/upgradeable-contracts/delegate-calls/upgradeable-flipper/Cargo.toml;
+           for example in examples/*/; do
+               if [ "$example" = "examples/upgradeable-contracts/" ]; then continue; fi;
+               echo "Processing example: $example";
+               cargo contract ${{ matrix.job }} --verbose --manifest-path=$example/Cargo.toml;
+           done
