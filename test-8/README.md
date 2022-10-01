@@ -24,7 +24,8 @@
 ## ERC20
 
 - build 
-  ![build](/img/build.png)
+  ![bu](img/build.png)
+
 - transfer
   ![tr](img/upload.png)
   ![tr](img/new.png)
