@@ -23,12 +23,13 @@
 
 ## ERC20
 
-- build 
+- build
   ![bu](img/build.png)
 
 [initialize_contract 打印log](https://github.com/lc-1010/test-4/blob/main/test-8/erc20/lib.rs#L61)
 
-```
+```rust
+
  ink_lang::utils::initialize_contract(|contract: &mut Self| {
 
   ....
@@ -36,7 +37,8 @@
 ink_env::debug_println!(
                     "打印log constructor total_supply{}: initialize_contract ",
                     total_supply
-                    ```
+```
+
 - transfer
   ![tr](img/upload.png)
   ![tr](img/new.png)
