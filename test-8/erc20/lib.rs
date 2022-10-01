@@ -3,8 +3,8 @@
 use ink_lang as ink;
 
 #[ink::contract]
-mod erc20 {  
-    
+mod erc20 {
+
     use ink_storage::Mapping;
      use ink_storage::traits::SpreadAllocate;
 
@@ -57,21 +57,26 @@ mod erc20 {
                     to: caller,
                     value: total_supply,
                 });
+
+                ink_env::debug_println!(
+                    "打印log constructor total_supply{}: initialize_contract ",
+                    total_supply
+                );
             })
 
             //   Self::env().emit_event(Transfer{
             //     from: AccountId::default(),
             //     to: sender,
             //     value: total_supply,
-            //     }); 
-            // Self { 
-            //     total_supply, 
+            //     });
+            // Self {
+            //     total_supply,
             //     balances,
             //    approval: Default::default()
             //      }
         }
 
-         
+
 
         #[ink(message)]
         pub fn get(&self) -> Balance {
@@ -83,13 +88,13 @@ mod erc20 {
         }
 
 
-        
+
 
         #[ink(message)]
         pub fn total_supply(&self)->Balance{
             self.total_supply
         }
-        
+
         #[ink(message)]
         pub fn transfer(&mut self,to:AccountId, value:Balance)-> Result<()>{
 
@@ -99,7 +104,7 @@ mod erc20 {
             if from_balance < value {
               return Err(Error::InsufficientBalance)
             }
-           
+
 
              self.balances.insert(&from,&((from_balance-value)));
 
@@ -115,8 +120,7 @@ mod erc20 {
             );
             Ok(())
         }
-         
+
     }
 
 }
-
