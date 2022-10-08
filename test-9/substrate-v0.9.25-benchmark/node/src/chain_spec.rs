@@ -1,12 +1,16 @@
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	SystemConfig, WASM_BINARY, opaque::SessionKeys,
 };
 use sc_service::ChainType;
+use sc_telemetry::{Telemetry, TelemetryEndpoints};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::{traits::{IdentifyAccount, Verify}, key_types::STAKING};
+
+use sp_consensus_babe::AuthorityId as BabeId;
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -22,6 +26,13 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 }
 
 type AccountPublic = <Signature as Verify>::Signer;
+
+// 常量STAGING_TELEMETRY_URL
+const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+
+fn session_keys(babe: BabeId, grandpa: GrandpaId, im_online: ImOnlineId) -> SessionKeys {
+	SessionKeys { babe, grandpa, im_online }
+}
 
 /// Generate an account ID from seed.
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
@@ -153,4 +164,30 @@ fn testnet_genesis(
 		},
 		transaction_payment: Default::default(),
 	}
+
+	
+}
+
+
+pub fn my_staging_network_config()->ChainSpec{
+	
+	let name = "My Substrate Stencil";
+	let id = "my_stencil_network";
+	let chain_type = ChainType::Live;
+	let constructor  = staging_network_genesis;
+	let boot_nodes = vec![];
+	let telemetry_endpoints = Some(
+		TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+				.expect("Staging telemetry url is valid; qed"),
+	);
+	let 
+	let extensions = Default::default(); 
+	ChainSpec::from_genesis(name, id, chain_type,
+		 constructor, boot_nodes, telemetry_endpoints,
+		  protocol_id, fork_id, 
+		  properties, extensions)
+}
+
+fn staging_network_genesis(){
+
 }
