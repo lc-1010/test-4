@@ -165,12 +165,12 @@ fn testnet_genesis(
 		transaction_payment: Default::default(),
 	}
 
-	
+
 }
 
 
 pub fn my_staging_network_config()->ChainSpec{
-	
+
 	let name = "My Substrate Stencil";
 	let id = "my_stencil_network";
 	let chain_type = ChainType::Live;
@@ -180,14 +180,24 @@ pub fn my_staging_network_config()->ChainSpec{
 		TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
 				.expect("Staging telemetry url is valid; qed"),
 	);
-	let 
-	let extensions = Default::default(); 
+	let protocol_id =None;
+	let fork_id = None;
+	let properties = None;
+	let extensions = Default::default();
 	ChainSpec::from_genesis(name, id, chain_type,
 		 constructor, boot_nodes, telemetry_endpoints,
-		  protocol_id, fork_id, 
+		  protocol_id, fork_id,
 		  properties, extensions)
 }
 
-fn staging_network_genesis(){
+fn staging_network_genesis() -> GenesisConfig {
+	let initial_authorities: Vec<(AccountId,AccountId,BabeId,GrandpaId, ImOnlineId)> = vec![
+	(
+		hex!["0x62692ff7965729b21a10862da513beb42b7da54f321e35e2147983e1e53dc935"].into(),
+		hex!["0x3cd09eecf6faa579ff49a5bb8175c02244da1151cfa75b8b3fc9dcb15b4b281d"].into(),
+		hex![""].unchecked_into(),
+		hex![""].unchecked_into(),
+		hex![""].unchecked_into(),
+	),()];
 
 }
