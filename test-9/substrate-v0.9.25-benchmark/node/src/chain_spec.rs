@@ -180,7 +180,7 @@ pub fn my_staging_network_config()->ChainSpec{
 		TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
 				.expect("Staging telemetry url is valid; qed"),
 	);
-	let protocol_id =None;
+	let protocol_id =None;//Some("my_staging");
 	let fork_id = None;
 	let properties = None;
 	let extensions = Default::default();
@@ -199,5 +199,10 @@ fn staging_network_genesis() -> GenesisConfig {
 		hex![""].unchecked_into(),
 		hex![""].unchecked_into(),
 	),()];
+	
+	let root_key:AccountId = hex![].into();
 
+	let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+
+	testnet_genesis(wasm_binary, initial_authorities, root_key, endowed_accounts, enable_println)
 }
