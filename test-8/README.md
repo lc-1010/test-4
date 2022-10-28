@@ -14,25 +14,19 @@
  cargo contract --help
 ```
 
-<<<<<<< HEAD
-### 存储 
-=======
 ### 存储
->>>>>>> a5b97fbfb4d00467261bc4d6635b6732693c3398
 
 - #[ink(storage)]
 - #[ink(constructor)]
 - #[ink(message)]
 - #[ink(event)]
 
-<<<<<<< HEAD
 ### 版本 2.0.0
 ```
 cargo install --force --locked cargo-contract --vers 2.0.0-alpha.1
 
 cargo install contracts-node --git https://github.com/paritytech/substrate-contracts-node.git --tag v0.20.0 --force --locked
 ```
-=======
 ## ERC20
 
 - build
@@ -60,4 +54,3 @@ ink_env::debug_println!(
 
 - node log
   ![log](img/log.png)
->>>>>>> a5b97fbfb4d00467261bc4d6635b6732693c3398
